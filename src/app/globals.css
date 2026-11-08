@@ -1,26 +1,77 @@
 @import "tailwindcss";
 
+/* Dark mode is driven by the `dark` class on <html> (see ThemeScript). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Aterriza design tokens.
+ * Every text/background pair is checked against WCAG AA by
+ * `node scripts/check-contrast.mjs` (keep both lists in sync).
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #f5fbe3;
+  --surface: #ffffff;
+  --foreground: #1b2a3a;
+  --heading: #1b3a66;
+  --muted: #4a5a6b;
+  --border: #6b7b8c;
+  --primary: #b5d275;
+  --primary-hover: #a3c35c;
+  --primary-edge: #5e7f22;
+  --on-primary: #1b3a66;
+  --accent-soft: #e3f0c4;
+  --on-accent-soft: #1b3a66;
+  --hover: #e9f3cf;
+  --warning-soft: #fff4d6;
+  --on-warning-soft: #7a4a00;
+  --link: #1b3a66;
+  --ring: #1b3a66;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0e1f38;
+  --surface: #1b3a66;
+  --foreground: #eaf5d3;
+  --heading: #b5d275;
+  --muted: #c3d1b0;
+  --border: #8aa6cf;
+  --primary: #b5d275;
+  --primary-hover: #c6de8e;
+  --primary-edge: #b5d275;
+  --on-primary: #1b3a66;
+  --accent-soft: #2c4a1e;
+  --on-accent-soft: #eaf5d3;
+  --hover: #24477a;
+  --warning-soft: #3a2e10;
+  --on-warning-soft: #ffe3a3;
+  --link: #b5d275;
+  --ring: #b5d275;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-heading: var(--heading);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-edge: var(--primary-edge);
+  --color-on-primary: var(--on-primary);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent-soft: var(--on-accent-soft);
+  --color-hover: var(--hover);
+  --color-warning-soft: var(--warning-soft);
+  --color-on-warning-soft: var(--on-warning-soft);
+  --color-link: var(--link);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
