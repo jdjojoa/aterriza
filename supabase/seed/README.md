@@ -36,6 +36,24 @@ Para **renombrar** un lugar, pon su `id` en la columna `id` (si no, se crea uno 
 - El hospital y la oficina de Migraciones están con `is_published = false` hasta confirmar su ubicación.
 - Las 10 rutas son solo **estructura de ejemplo** (`EJ-01`…`EJ-10`), sin tarifas y sin publicar.
 
+## Medicamentos (`medicines.csv`) — plantilla, aún no se carga
+
+`medicines.csv` tiene las columnas de la tabla `medicines` y 25 medicamentos de venta libre comunes con
+**solo** `brand_name_pe` (nombre genérico) y `active_ingredient`. El script `npm run seed` todavía **no** lo lee:
+hay que completarlo antes desde fuentes oficiales.
+
+- `equivalent_co`, `where_to_buy`, `source_url` y `verified_at` están vacíos a propósito: complétalos desde
+  [DIGEMID](https://opm-digemid.minsa.gob.pe/) (Perú) e [INVIMA](https://www.invima.gov.co/) (Colombia).
+- `source_name`, `source_url` y `digemid_url` son obligatorios en la base de datos.
+- `active_ingredient`: si hay varios, sepáralos con `+` (así los compara la búsqueda de `/identificar`).
+- `keywords`: nombres comerciales para encontrar el medicamento por su marca.
+- Nunca escribas dosis, ni las palabras "sustituto" o "intercambiable" (la base de datos las rechaza).
+  En Colombia se habla siempre de **equivalente referencial**.
+- `warning`: vacío = aviso por defecto de la tabla.
+
+La búsqueda por foto usa la función `search_medicines` de `supabase/migrations/0003_search_medicines.sql`
+(pégala en el SQL Editor después de 0001 y 0002).
+
 ## Volver a cargar
 
 Requiere `.env.local` con `NEXT_PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`.

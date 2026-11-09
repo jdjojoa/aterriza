@@ -47,7 +47,7 @@ export const SECTIONS: Section[] = [
     label: "Identificar",
     description: "Toma una foto de un medicamento o una comida y entiende qué es.",
     icon: "camera",
-    available: false,
+    available: true,
   },
   {
     href: "/chat",

@@ -372,6 +372,20 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: {
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      search_medicines: {
+        Args: {
+          p_brand_name: string | null;
+          p_active_ingredients: string[];
+          p_limit?: number;
+        };
+        Returns: (ContentRow & MedicineFields)[];
+        SetofOptions: {
+          from: "*";
+          to: "medicines";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

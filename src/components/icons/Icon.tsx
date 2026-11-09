@@ -15,7 +15,8 @@ export type IconName =
   | "external-link"
   | "send"
   | "currency"
-  | "swap";
+  | "swap"
+  | "image";
 
 const PATHS: Record<IconName, ReactNode> = {
   home: (
@@ -69,6 +70,13 @@ const PATHS: Record<IconName, ReactNode> = {
     <>
       <path d="M14 4h6v6M20 4l-9 9" />
       <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="1.5" />
+      <path d="m21 16-5-5-9 9" />
     </>
   ),
   send: <path d="M4 12 20 4l-4 16-4-7Zm8 1 8-9" />,
