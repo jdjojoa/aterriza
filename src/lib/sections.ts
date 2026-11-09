@@ -23,14 +23,14 @@ export const SECTIONS: Section[] = [
     label: "Transporte",
     description: "Combis, mototaxis y rutas para moverte por Piura.",
     icon: "bus",
-    available: false,
+    available: true,
   },
   {
     href: "/lugares",
     label: "Lugares",
     description: "Salud, trámites, comida y universidades en el mapa.",
     icon: "map-pin",
-    available: false,
+    available: true,
   },
   {
     href: "/identificar",

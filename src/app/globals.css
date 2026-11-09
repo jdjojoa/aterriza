@@ -75,3 +75,80 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* ---------------------------------------------------------------------------
+ * Leaflet maps (src/components/map/MapView.tsx)
+ * ------------------------------------------------------------------------- */
+:root {
+  --map-green: #5e7f22;
+  --map-blue: #1b3a66;
+  --map-pin-dot: #ffffff;
+  --map-route: #1b3a66;
+}
+
+.dark {
+  --map-green: #b5d275;
+  --map-blue: #8aa6cf;
+  --map-pin-dot: #0e1f38;
+  --map-route: #b5d275;
+}
+
+.aterriza-map {
+  background: var(--accent-soft);
+  font-family: inherit;
+}
+
+/* Dark mode: invert the OSM tiles only (markers and lines keep their colours). */
+.dark .aterriza-map .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9);
+}
+
+.dark .aterriza-map .leaflet-control-attribution,
+.dark .aterriza-map .leaflet-bar a {
+  background: var(--surface);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.dark .aterriza-map .leaflet-control-attribution a {
+  color: var(--link);
+}
+
+.map-pin {
+  background: none;
+  border: none;
+}
+
+.map-pin svg {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.35));
+}
+
+.map-pin__body {
+  stroke: var(--map-pin-dot);
+  stroke-width: 2;
+}
+
+.map-pin--green .map-pin__body {
+  fill: var(--map-green);
+}
+
+.map-pin--blue .map-pin__body {
+  fill: var(--map-blue);
+}
+
+.map-pin__dot {
+  fill: var(--map-pin-dot);
+}
+
+.map-pin:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 9999px;
+}
+
+/* Leaflet sets `stroke` as an attribute; CSS wins over presentation attributes. */
+.map-route {
+  stroke: var(--map-route);
+}

@@ -8,7 +8,11 @@ export type IconName =
   | "chat"
   | "user"
   | "logout"
-  | "chevron-right";
+  | "chevron-right"
+  | "map"
+  | "list"
+  | "close"
+  | "external-link";
 
 const PATHS: Record<IconName, ReactNode> = {
   home: (
@@ -50,6 +54,20 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   "chevron-right": <path d="m9 6 6 6-6 6" />,
+  map: (
+    <>
+      <path d="m9 4-6 2.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5Z" />
+      <path d="M9 4v13.5M15 6.5V20" />
+    </>
+  ),
+  list: <path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />,
+  close: <path d="M6 6l12 12M18 6 6 18" />,
+  "external-link": (
+    <>
+      <path d="M14 4h6v6M20 4l-9 9" />
+      <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+    </>
+  ),
 };
 
 export function Icon({ name, size = 22 }: { name: IconName; size?: number }) {
