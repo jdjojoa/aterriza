@@ -43,6 +43,22 @@ export const SECTIONS: Section[] = [
     inNav: false,
   },
   {
+    href: "/jerga",
+    label: "Jerga",
+    description: "Qué significa pata, jato o al toque, y cómo se dice en Colombia.",
+    icon: "book",
+    available: true,
+    inNav: false,
+  },
+  {
+    href: "/costumbres",
+    label: "Costumbres",
+    description: "Saludos, comidas, propinas, horarios y seguridad en Piura.",
+    icon: "globe",
+    available: true,
+    inNav: false,
+  },
+  {
     href: "/identificar",
     label: "Identificar",
     description: "Toma una foto de un medicamento o una comida y entiende qué es.",

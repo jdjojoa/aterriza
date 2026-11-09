@@ -114,7 +114,7 @@ function orFilter(columns: string[], keywords: string[]) {
 }
 
 // -----------------------------------------------------------------------------
-// Searchers: one per table. Add medicines, foods, slang_terms and customs here.
+// Searchers: one per table. Add medicines and foods here.
 // -----------------------------------------------------------------------------
 
 type SearchHit = {
@@ -210,7 +210,98 @@ async function searchPlaces(supabase: Client, keywords: string[]): Promise<Searc
   });
 }
 
-const SEARCHERS: Searcher[] = [searchTransport, searchPlaces];
+/**
+ * Slang: accent-insensitive match through the search_slang_terms RPC (unaccent).
+ * Falls back to ilike if the 0005 migration is not applied yet.
+ */
+async function searchSlang(supabase: Client, keywords: string[]): Promise<SearchHit[]> {
+  const terms = [...new Set(keywords.flatMap((k) => [k, stem(k)]))];
+  const rpc = await supabase.rpc("search_slang_terms", { p_terms: terms, p_limit: 10 });
+  let data = rpc.data;
+  if (rpc.error) {
+    const filter = orFilter(["term", "meaning", "equivalent_co"], keywords);
+    if (!filter) return [];
+    const fallback = await supabase
+      .from("slang_terms")
+      .select("*")
+      .eq("is_published", true)
+      .or(filter)
+      .limit(10);
+    if (fallback.error) return [];
+    data = fallback.data;
+  }
+  if (!data) return [];
+
+  return data.map((t) => {
+    const text = [
+      `Jerga peruana: "${t.term}"`,
+      `Significa: ${t.meaning}`,
+      t.equivalent_co && `En Colombia se diría: ${t.equivalent_co}`,
+      t.example && `Ejemplo: "${t.example}"`,
+    ]
+      .filter(Boolean)
+      .join(". ");
+    // A keyword that is the term itself ("jato") beats a mention in the meaning.
+    const termWords: string[] = normalize(t.term).match(/[a-z0-9ñ]+/g) ?? [];
+    const exact = keywords.some((k) => termWords.includes(k) || termWords.includes(stem(k)));
+    return {
+      title: t.term,
+      sourceName: t.source_name,
+      sourceUrl: t.source_url,
+      verifiedAt: t.verified_at,
+      text,
+      score: score(text, keywords) + (exact ? 3 : 0),
+    };
+  });
+}
+
+/** Words that point to a custom category even if the text does not match. */
+const CUSTOM_HINTS: Record<string, string[]> = {
+  saludo: ["saludo", "saludar", "beso", "besito", "presentar", "tutear", "usted", "trato"],
+  comida: ["almuerzo", "almorzar", "menu", "comer", "cena", "cenar", "desayuno"],
+  transporte: ["combi", "mototaxi", "taxi", "pasaje", "cobrador"],
+  horarios: ["horario", "hora", "puntual", "puntualidad", "abren", "cierran", "temprano"],
+  propinas: ["propina", "servicio", "mesero"],
+  seguridad: ["seguridad", "seguro", "segura", "robo", "robar", "peligro", "peligroso", "celular", "emergencia", "policia", "noche"],
+};
+const CUSTOM_WORDS = ["costumbre", "cultura", "normal", "educado", "mala", "grosero", "etiqueta"];
+
+async function searchCustoms(supabase: Client, keywords: string[]): Promise<SearchHit[]> {
+  const categories = hintedKeys(keywords, CUSTOM_HINTS);
+  const generic = keywords.some((k) => CUSTOM_WORDS.some((w) => stem(k) === stem(w)));
+  const filters = [
+    orFilter(["title", "body"], keywords),
+    ...categories.map((c) => `category.eq.${c}`),
+  ].filter(Boolean);
+
+  let query = supabase
+    .from("customs")
+    .select("title, body, category, source_name, source_url, verified_at")
+    .eq("is_published", true)
+    .limit(CANDIDATES_PER_TABLE);
+  if (!generic) {
+    if (filters.length === 0) return [];
+    query = query.or(filters.join(","));
+  }
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  return data.map((c) => {
+    const text = `Costumbre en Piura: ${c.title}. ${c.body}`;
+    const bonus = c.category && categories.includes(c.category) ? 2 : generic ? 1 : 0;
+    return {
+      title: c.title,
+      sourceName: c.source_name,
+      sourceUrl: c.source_url,
+      verifiedAt: c.verified_at,
+      text,
+      score: score(text, keywords) + bonus,
+    };
+  });
+}
+
+const SEARCHERS: Searcher[] = [searchTransport, searchPlaces, searchSlang, searchCustoms];
 
 async function searchTips(supabase: Client, keywords: string[]) {
   const filter = orFilter(["body", "category"], keywords);

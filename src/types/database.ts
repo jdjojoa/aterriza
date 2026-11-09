@@ -396,6 +396,16 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      search_slang_terms: {
+        Args: { p_terms: string[]; p_limit?: number };
+        Returns: (ContentRow & SlangTermFields)[];
+        SetofOptions: {
+          from: "*";
+          to: "slang_terms";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

@@ -8,15 +8,16 @@
  * your machine; never import this file from app code.
  *
  * Matching ("upsert"): a row with `id` updates that row. Otherwise places and
- * foods match by `name`, transport_routes by `code` (or `name` when code is empty). Matching
- * rows are updated, the rest are inserted. Nothing is ever deleted.
+ * foods match by `name`, transport_routes by `code` (or `name` when code is empty),
+ * slang_terms by `term` and customs by `title`. Matching rows are updated, the rest
+ * are inserted. Nothing is ever deleted.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../src/types/database";
 
-type TableName = "places" | "transport_routes" | "foods";
+type TableName = "places" | "transport_routes" | "foods" | "slang_terms" | "customs";
 type Value = string | number | boolean | null | string[] | [number, number][];
 type Kind = "text" | "number" | "boolean" | "date" | "uuid" | "path" | "url" | "list";
 type Column = { kind: Kind; required?: boolean; oneOf?: readonly string[] };
@@ -92,6 +93,37 @@ const TABLES: { table: TableName; keys: string[]; columns: Record<string, Column
       where_to_try: { kind: "text" },
       image_url: { kind: "url" },
       keywords: { kind: "list" },
+      ...common,
+    },
+  },
+  {
+    table: "slang_terms",
+    keys: ["term"],
+    columns: {
+      id: { kind: "uuid" },
+      term: { kind: "text", required: true },
+      meaning: { kind: "text", required: true },
+      equivalent_co: { kind: "text" },
+      example: { kind: "text" },
+      category: {
+        kind: "text",
+        oneOf: ["personas", "expresiones", "comida", "transporte", "compras", "estudio", "ropa", "lugares"],
+      },
+      ...common,
+    },
+  },
+  {
+    table: "customs",
+    keys: ["title"],
+    columns: {
+      id: { kind: "uuid" },
+      title: { kind: "text", required: true },
+      body: { kind: "text", required: true },
+      category: {
+        kind: "text",
+        oneOf: ["saludo", "comida", "transporte", "horarios", "propinas", "seguridad"],
+      },
+      icon: { kind: "text" },
       ...common,
     },
   },
@@ -276,7 +308,7 @@ function readTable(spec: (typeof TABLES)[number]): Prepared[] {
     const key = matchKey(spec.keys, record);
     if (seen.has(key)) errors.push(`línea ${line}: repite ${key} de la línea ${seen.get(key)}`);
     seen.set(key, line);
-    prepared.push({ line, record, label: String(record.code ?? record.name) });
+    prepared.push({ line, record, label: String(record.code ?? record.name ?? record.term ?? record.title) });
   });
   if (errors.length)
     throw new Error(`${spec.table}.csv tiene errores:\n  ${errors.join("\n  ")}`);
@@ -310,7 +342,7 @@ async function main() {
   });
 
   for (const { spec, rows } of work) {
-    const select = spec.keys.includes("code") ? "id, name, code" : "id, name";
+    const select = ["id", ...spec.keys].join(", ");
     const { data: existing, error } = await supabase.from(spec.table).select(select);
     if (error) throw new Error(`${spec.table}: ${error.message}`);
 

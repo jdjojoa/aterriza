@@ -16,7 +16,15 @@ export type IconName =
   | "send"
   | "currency"
   | "swap"
-  | "image";
+  | "image"
+  | "book"
+  | "globe"
+  | "search"
+  | "hand"
+  | "utensils"
+  | "clock"
+  | "shield"
+  | "info";
 
 const PATHS: Record<IconName, ReactNode> = {
   home: (
@@ -87,6 +95,34 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   swap: <path d="M7 4v14M3 14l4 4 4-4M17 20V6M13 10l4-4 4 4" />,
+  book: <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15ZM4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5M8 7h8M8 11h6" />,
+  globe: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4-4" />
+    </>
+  ),
+  hand: <path d="M7 11V6a1.5 1.5 0 0 1 3 0v4M10 10V4.5a1.5 1.5 0 0 1 3 0V10M13 10V5.5a1.5 1.5 0 0 1 3 0V11M16 11V8.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-.5a6 6 0 0 1-4.6-2.2L4 15.5a1.6 1.6 0 0 1 2.4-2.1L7 14" />,
+  utensils: <path d="M5 3v8a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V3M7 13v8M7 3v6M17 21V3c-2 1-3 4-3 7v3h3" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </>
+  ),
+  shield: <path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" />,
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8h.01" />
+    </>
+  ),
 };
 
 export function Icon({ name, size = 22 }: { name: IconName; size?: number }) {

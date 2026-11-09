@@ -1,6 +1,7 @@
 # Carga de contenido desde CSV
 
-Los archivos de `data/` son la fuente del contenido de `places`, `transport_routes` y `foods`.
+Los archivos de `data/` son la fuente del contenido de `places`, `transport_routes`, `foods`,
+`slang_terms` y `customs`.
 Edítalos y vuelve a cargarlos con el script; no hace falta tocar SQL.
 
 ## Editar los CSV
@@ -23,6 +24,7 @@ Edítalos y vuelve a cargarlos con el script; no hace falta tocar SQL.
 ### Cómo se reconoce una fila existente
 
 - `places` y `foods`: por `name` (sin distinguir mayúsculas).
+- `slang_terms`: por `term`; `customs`: por `title`.
 - `transport_routes`: por `code`; si `code` está vacío, por `name`.
 - Si la fila tiene `id`, se usa el `id`.
 
@@ -52,6 +54,20 @@ Para **renombrar** un lugar, pon su `id` en la columna `id` (si no, se crea uno 
 
 La búsqueda por foto usa la función `search_foods` de `supabase/migrations/0004_search_foods.sql`
 (pégala en el SQL Editor después de 0003).
+
+## Jerga (`slang_terms.csv`) y costumbres (`customs.csv`)
+
+40 términos peruanos y piuranos y 8 costumbres, publicados pero **todos "Pendiente de verificación"**
+(`verified_at` vacío). Al verificar un término, pon la fuente real en `source_name`/`source_url` y la fecha.
+
+- `category` (jerga): `expresiones`, `personas`, `comida`, `transporte`, `compras`, `estudio`, `lugares`, `ropa`.
+- `category` (costumbres): `saludo`, `comida`, `transporte`, `horarios`, `propinas`, `seguridad`.
+- `equivalent_co`: cómo se diría en Colombia. `example`: una frase de uso, sin comillas.
+- `icon` (costumbres): opcional; la app elige el ícono por categoría.
+
+El chatbot busca en la jerga con la función `search_slang_terms` (sin tildes, con `unaccent`) de
+`supabase/migrations/0005_search_slang.sql`: pégala en el SQL Editor después de 0004. Mientras no esté,
+el chat usa una búsqueda más simple.
 
 ## Medicamentos (`medicines.csv`) — plantilla, aún no se carga
 
