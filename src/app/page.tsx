@@ -1,6 +1,7 @@
 import { Suspense, type ReactNode } from "react";
 import { AuthErrorNotice } from "@/components/AuthErrorNotice";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { InstallAppButton } from "@/components/InstallAppButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Logo } from "@/components/Logo";
 import { Card } from "@/components/ui/Card";
@@ -86,6 +87,7 @@ export default function Home() {
           <AuthErrorNotice />
         </Suspense>
         <GoogleSignInButton />
+        <InstallAppButton />
       </div>
       </main>
     </>

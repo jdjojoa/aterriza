@@ -77,7 +77,13 @@ export function ProfileMenu({ name, avatarUrl }: ProfileMenuProps) {
             <span className="text-sm font-bold text-muted">Tema</span>
             <ThemeToggle />
           </div>
-          <form action={signOut}>
+          <form
+            action={signOut}
+            // Drop pages cached by public/sw.js so the next person on this device can't see them.
+            onSubmit={() => {
+              if ("caches" in window) void caches.delete("aterriza-pages");
+            }}
+          >
             <button type="submit" className={itemClasses}>
               <Icon name="logout" size={20} />
               Cerrar sesión

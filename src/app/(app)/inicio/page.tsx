@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/icons/Icon";
+import { InstallAppButton } from "@/components/InstallAppButton";
 import { firstName, getCurrentProfile } from "@/lib/auth";
 import { countryName } from "@/lib/countries";
 import { SECTIONS } from "@/lib/sections";
@@ -72,6 +73,8 @@ export default function HomePage() {
           ))}
         </ul>
       </section>
+
+      <InstallAppButton />
     </main>
   );
 }
