@@ -7,9 +7,11 @@ export type Section = {
   icon: IconName;
   /** false = shows "Próximamente" (planned for the 18 Nov release). */
   available: boolean;
+  /** false = only on /inicio, not in BottomNav (which fits 5 items). */
+  inNav?: boolean;
 };
 
-/** Main sections, in BottomNav order. */
+/** Main sections, in BottomNav order (entries with inNav: false are skipped there). */
 export const SECTIONS: Section[] = [
   {
     href: "/inicio",
@@ -31,6 +33,14 @@ export const SECTIONS: Section[] = [
     description: "Salud, trámites, comida y universidades en el mapa.",
     icon: "map-pin",
     available: true,
+  },
+  {
+    href: "/moneda",
+    label: "Moneda",
+    description: "Convierte soles a pesos colombianos y al revés.",
+    icon: "currency",
+    available: true,
+    inNav: false,
   },
   {
     href: "/identificar",

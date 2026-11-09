@@ -3,6 +3,7 @@ export const APP_PATHS = [
   "/inicio",
   "/transporte",
   "/lugares",
+  "/moneda",
   "/identificar",
   "/chat",
   "/perfil",

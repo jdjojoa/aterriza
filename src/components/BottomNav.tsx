@@ -14,7 +14,7 @@ export function BottomNav() {
       className="fixed inset-x-0 bottom-0 z-20 border-t border-border/30 bg-surface pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="mx-auto grid max-w-md grid-cols-5">
-        {SECTIONS.map((section) => {
+        {SECTIONS.filter((section) => section.inNav !== false).map((section) => {
           const active =
             pathname === section.href ||
             pathname.startsWith(`${section.href}/`);
