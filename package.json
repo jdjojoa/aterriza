@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:contrast": "node scripts/check-contrast.mjs",
+    "check:auth": "node scripts/check-auth-flow.mjs",
     "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {

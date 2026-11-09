@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-// Next.js 16: this file replaces middleware.ts. For now it only refreshes the session.
+// Next.js 16: this file replaces middleware.ts. Refreshes the session and guards routes.
 export async function proxy(request: NextRequest) {
   return updateSession(request);
 }

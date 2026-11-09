@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { themeScript } from "@/lib/theme";
 import "./globals.css";
 
@@ -32,9 +31,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="flex min-h-full flex-col font-sans">
-        <header className="flex justify-end px-4 pt-4">
-          <ThemeToggle />
-        </header>
         {children}
       </body>
     </html>
