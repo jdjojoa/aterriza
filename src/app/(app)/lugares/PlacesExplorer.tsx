@@ -113,6 +113,9 @@ export function PlacesExplorer({ places }: { places: PlaceItem[] }) {
                   <span className="font-bold text-heading">{p.name}</span>
                   <span className="flex flex-wrap items-center gap-2 text-sm text-muted">
                     <Badge>{placeCategoryLabel(p.category)}</Badge>
+                    {p.verified_at === null && (
+                      <Badge variant="warning">Pendiente de verificación</Badge>
+                    )}
                     {p.address && <span className="truncate">{p.address}</span>}
                   </span>
                 </span>
