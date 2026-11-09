@@ -36,3 +36,4 @@ PWA en español para estudiantes colombianos que llegan a Piura, Perú. Proyecto
 - Cambios pequeños y verificables.
 - Al final de cada tarea ejecuta `npm run build` y corrige todos los errores antes de darla por terminada.
 - Next.js 16: `middleware.ts` está obsoleto; el punto de entrada es `src/proxy.ts`.
+- Trabajo solo. Al terminar cada tarea, commit y push directo a main, salvo que te pida una rama.
