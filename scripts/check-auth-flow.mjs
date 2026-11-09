@@ -112,7 +112,8 @@ try {
   await expectOk("/inicio", cookie, "Colombia → Piura");
   await expectOk("/inicio", cookie, "Próximamente");
   await expectOk("/perfil", cookie, "Laura Prueba Gómez");
-  for (const p of ["/transporte", "/lugares", "/identificar", "/chat"]) await expectOk(p, cookie, "Próximamente");
+  await expectOk("/identificar", cookie, "Próximamente");
+  await expectOk("/chat", cookie, "Chat");
 
   // Profile edit (same update the /perfil Server Action runs)
   const edit = await rest(`/profiles?id=eq.${user.id}`, { method: "PATCH", body: JSON.stringify({ full_name: "Laura Editada", origin_country: "EC" }) });

@@ -12,7 +12,8 @@ export type IconName =
   | "map"
   | "list"
   | "close"
-  | "external-link";
+  | "external-link"
+  | "send";
 
 const PATHS: Record<IconName, ReactNode> = {
   home: (
@@ -68,6 +69,7 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
     </>
   ),
+  send: <path d="M4 12 20 4l-4 16-4-7Zm8 1 8-9" />,
 };
 
 export function Icon({ name, size = 22 }: { name: IconName; size?: number }) {

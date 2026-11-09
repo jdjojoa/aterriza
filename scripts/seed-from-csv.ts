@@ -315,7 +315,9 @@ async function main() {
         throw new Error(`${spec.table} línea ${line}: ${key} coincide con ${ids.length} filas; usa la columna id`);
       if (ids.length === 0) {
         if (record.id) throw new Error(`${spec.table} línea ${line}: no existe ninguna fila con ${key}`);
-        inserts.push(record);
+        // No id: let Postgres generate it (gen_random_uuid()).
+        const { id, ...rest } = record;
+        inserts.push(id ? record : rest);
         continue;
       }
       const { id: _id, ...changes } = record;
@@ -328,7 +330,7 @@ async function main() {
       updated++;
     }
     if (inserts.length) {
-      const { error: insErr } = await supabase.from(spec.table).insert(inserts as never);
+      const { error: insErr } = await supabase.from(spec.table).insert(inserts as never, { defaultToNull: false });
       if (insErr) throw new Error(`${spec.table} (insertar): ${insErr.message}`);
     }
     console.log(`${spec.table}: ${inserts.length} insertadas, ${updated} actualizadas`);

@@ -44,6 +44,6 @@ export const SECTIONS: Section[] = [
     label: "Chat",
     description: "Pregunta lo que necesites sobre tu llegada a Piura.",
     icon: "chat",
-    available: false,
+    available: true,
   },
 ];
