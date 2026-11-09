@@ -1,4 +1,5 @@
 /** /identificar constants and types shared by the API route and the UI. */
+import type { FoodCard } from "./foods";
 
 export type IdentifyKind = "medicine" | "food";
 
@@ -53,6 +54,21 @@ export type IdentifyApiSuccess = Quota &
     | { status: "verified"; reading: PackageReading; medicine: MedicineCard }
     /** generalUse is null when the AI text was missing or failed validation. */
     | { status: "ai"; reading: PackageReading; generalUse: string | null }
+  );
+
+/** What Gemini recognized in a food photo. */
+export type FoodReading = {
+  dishName: string;
+  mainIngredients: string[];
+  confidence: Confidence;
+};
+
+export type FoodApiSuccess = Quota &
+  (
+    | { status: "unreadable"; message: string }
+    | { status: "verified"; reading: FoodReading; food: FoodCard }
+    /** description is null when the AI text was missing or failed validation. */
+    | { status: "ai"; reading: FoodReading; description: string | null; allergenNote: string }
   );
 
 export type IdentifyApiError = {

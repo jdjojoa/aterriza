@@ -1,6 +1,6 @@
 # Carga de contenido desde CSV
 
-Los archivos de `data/` son la fuente del contenido de `places` y `transport_routes`.
+Los archivos de `data/` son la fuente del contenido de `places`, `transport_routes` y `foods`.
 Edítalos y vuelve a cargarlos con el script; no hace falta tocar SQL.
 
 ## Editar los CSV
@@ -22,7 +22,7 @@ Edítalos y vuelve a cargarlos con el script; no hace falta tocar SQL.
 
 ### Cómo se reconoce una fila existente
 
-- `places`: por `name` (sin distinguir mayúsculas).
+- `places` y `foods`: por `name` (sin distinguir mayúsculas).
 - `transport_routes`: por `code`; si `code` está vacío, por `name`.
 - Si la fila tiene `id`, se usa el `id`.
 
@@ -35,6 +35,23 @@ Para **renombrar** un lugar, pon su `id` en la columna `id` (si no, se crea uno 
 - Las coordenadas son **aproximadas** y todo está "Pendiente de verificación".
 - El hospital y la oficina de Migraciones están con `is_published = false` hasta confirmar su ubicación.
 - Las 10 rutas son solo **estructura de ejemplo** (`EJ-01`…`EJ-10`), sin tarifas y sin publicar.
+
+## Comidas (`foods.csv`)
+
+15 platos piuranos y peruanos con `description`, `main_ingredients` y `keywords`, publicados pero
+"Pendiente de verificación" (la app lo indica en cada ficha).
+
+- `similar_co` (parecido en Colombia) y `where_to_try` (dónde probarlo en Piura) están vacíos a propósito:
+  los llena quien lo haya comprobado. Al verificar, pon la fuente real en `source_name`/`source_url` y la fecha
+  en `verified_at`.
+- `keywords`: otros nombres del plato separados por `|`, p. ej. `cebiche|seviche`. La búsqueda por foto de
+  `/identificar` compara el nombre que reconoce la IA con `name` y con cada keyword.
+- `image_url`: enlace a una foto con permiso de uso (opcional).
+- Los alérgenos comunes (mariscos, maní, lácteos…) se detectan solos a partir de `name` e `main_ingredients`:
+  escribe ahí los ingredientes reales.
+
+La búsqueda por foto usa la función `search_foods` de `supabase/migrations/0004_search_foods.sql`
+(pégala en el SQL Editor después de 0003).
 
 ## Medicamentos (`medicines.csv`) — plantilla, aún no se carga
 

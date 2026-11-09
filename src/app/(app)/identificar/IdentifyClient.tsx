@@ -1,17 +1,27 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SourceBadge } from "@/components/ui/SourceBadge";
 import { Icon } from "@/components/icons/Icon";
 import {
+  AI_FOOD_NOTICE,
+  allergenNote,
+  detectAllergens,
+  FOOD_PHOTO_GUIDE,
+  normalizeText,
+  type FoodCard,
+} from "@/lib/foods";
+import {
   AI_MEDICINE_NOTICE,
   DIGEMID_URL,
   JPEG_QUALITY,
   MAX_IMAGE_SIDE,
   PHOTO_GUIDE,
+  type FoodApiSuccess,
+  type FoodReading,
   type IdentifyApiError,
   type IdentifyApiSuccess,
   type IdentifyKind,
@@ -163,28 +173,109 @@ function AiResult({ reading, generalUse }: { reading: PackageReading; generalUse
 }
 
 // -----------------------------------------------------------------------------
-// Medicine panel
+// Food cards
 // -----------------------------------------------------------------------------
 
-type Outcome =
-  | { kind: "result"; data: IdentifyApiSuccess }
-  | { kind: "error"; message: string };
+const PENDING_TEXT = "Pendiente de verificar.";
 
-function MedicinePanel({ initialRemaining, limit }: { initialRemaining: number; limit: number }) {
-  const cameraRef = useRef<HTMLInputElement>(null);
-  const galleryRef = useRef<HTMLInputElement>(null);
-  const [remaining, setRemaining] = useState(initialRemaining);
+/** Body of a dish card: shared by the photo result and the dish list. */
+function FoodDetails({ food }: { food: FoodCard }) {
+  const note = allergenNote(detectAllergens(food.name, food.mainIngredients, food.description));
+  return (
+    <div className="flex flex-col gap-4">
+      {food.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element -- external, admin-provided URL
+        <img
+          src={food.imageUrl}
+          alt={`Foto de ${food.name}`}
+          loading="lazy"
+          className="aspect-[4/3] w-full rounded-xl object-cover"
+        />
+      )}
+      <dl className="flex flex-col gap-3">
+        <Field label="Qué es">{food.description ?? PENDING_TEXT}</Field>
+        <Field label="Ingredientes principales">{food.mainIngredients ?? PENDING_TEXT}</Field>
+        <Field label="Parecido en Colombia">{food.similarCo ?? PENDING_TEXT}</Field>
+        <Field label="Dónde probarlo en Piura">{food.whereToTry ?? PENDING_TEXT}</Field>
+      </dl>
+      <NoticeBox>{note}</NoticeBox>
+      <SourceBadge
+        sourceName={food.sourceName}
+        sourceUrl={food.sourceUrl}
+        verifiedAt={food.verifiedAt}
+        variant="verificado"
+      />
+    </div>
+  );
+}
+
+function FoodVerifiedResult({ food }: { food: FoodCard }) {
+  return (
+    <Card className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <Badge variant="success" className="self-start">
+          Encontrado en Aterriza
+        </Badge>
+        <h2 className="text-xl font-extrabold text-heading">{food.name}</h2>
+      </div>
+      <FoodDetails food={food} />
+    </Card>
+  );
+}
+
+function capitalize(text: string) {
+  return text.charAt(0).toLocaleUpperCase("es") + text.slice(1);
+}
+
+function FoodAiResult({
+  reading,
+  description,
+  allergenNote: note,
+}: {
+  reading: FoodReading;
+  description: string | null;
+  allergenNote: string;
+}) {
+  return (
+    <Card className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <Badge variant="warning" className="self-start">
+          No está en nuestra lista verificada
+        </Badge>
+        <h2 className="text-xl font-extrabold text-heading">{capitalize(reading.dishName)}</h2>
+      </div>
+      <dl className="flex flex-col gap-3">
+        <Field label="Qué es">{description ?? "No pudimos generar una descripción de este plato."}</Field>
+        {reading.mainIngredients.length > 0 && (
+          <Field label="Ingredientes que se ven">{reading.mainIngredients.join(", ")}</Field>
+        )}
+      </dl>
+      <NoticeBox>{AI_FOOD_NOTICE}</NoticeBox>
+      <NoticeBox>{note}</NoticeBox>
+      <SourceBadge
+        sourceName="Generado con IA (Google Gemini)"
+        sourceUrl="https://ai.google.dev/"
+        verifiedAt={null}
+        variant="referencial-ia"
+      />
+    </Card>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Photo capture (shared by both tabs)
+// -----------------------------------------------------------------------------
+
+type QuotaProps = { remaining: number; limit: number; onRemaining: (remaining: number) => void };
+
+type Outcome<T> = { kind: "result"; data: T } | { kind: "error"; message: string };
+
+function usePhotoIdentify<T extends { remaining: number }>(kind: IdentifyKind, onRemaining: (n: number) => void) {
   const [preview, setPreview] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [outcome, setOutcome] = useState<Outcome<T> | null>(null);
 
-  const outOfQuota = remaining <= 0;
-
-  async function onFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = ""; // allow picking the same file again
-    if (!file || pending || outOfQuota) return;
-
+  async function identify(file: File) {
     setOutcome(null);
     setPending(true);
     try {
@@ -201,15 +292,15 @@ function MedicinePanel({ initialRemaining, limit }: { initialRemaining: number; 
       const res = await fetch("/api/identify", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ kind: "medicine" satisfies IdentifyKind, image }),
+        body: JSON.stringify({ kind, image }),
       });
-      const data = (await res.json()) as IdentifyApiSuccess | IdentifyApiError;
+      const data = (await res.json()) as T | IdentifyApiError;
       if ("error" in data) {
         setOutcome({ kind: "error", message: data.error });
-        if (typeof data.remaining === "number") setRemaining(data.remaining);
+        if (typeof data.remaining === "number") onRemaining(data.remaining);
       } else {
         setOutcome({ kind: "result", data });
-        setRemaining(data.remaining);
+        onRemaining(data.remaining);
       }
     } catch {
       setOutcome({ kind: "error", message: "Sin conexión. Revisa tu internet e intenta de nuevo." });
@@ -218,8 +309,40 @@ function MedicinePanel({ initialRemaining, limit }: { initialRemaining: number; 
     }
   }
 
+  return { preview, pending, outcome, identify };
+}
+
+function PhotoPicker({
+  remaining,
+  limit,
+  preview,
+  pending,
+  placeholder,
+  guide,
+  hint,
+  privacy,
+  onFile,
+}: Omit<QuotaProps, "onRemaining"> & {
+  preview: string | null;
+  pending: boolean;
+  placeholder: ReactNode;
+  guide: string;
+  hint: string;
+  privacy: string;
+  onFile: (file: File) => void;
+}) {
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const outOfQuota = remaining <= 0;
+
+  function onChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // allow picking the same file again
+    if (file && !pending && !outOfQuota) onFile(file);
+  }
+
   return (
-    <div className="flex flex-col gap-4">
+    <>
       <p aria-live="polite">
         <Badge variant={remaining > 1 ? "success" : "warning"}>
           {remaining === 1 ? `Te queda 1 foto de ${limit} hoy` : `Te quedan ${remaining} fotos de ${limit} hoy`}
@@ -235,23 +358,18 @@ function MedicinePanel({ initialRemaining, limit }: { initialRemaining: number; 
             // eslint-disable-next-line @next/next/no-img-element -- local data URL preview
             <img src={preview} alt="" className="size-full object-contain" />
           ) : (
-            <div className="flex flex-col items-center gap-2 px-6">
-              <Icon name="camera" size={40} />
-              <span className="flex h-10 w-32 items-center justify-center rounded-md border-2 border-current text-xs font-bold">
-                NOMBRE
-              </span>
-            </div>
+            placeholder
           )}
         </div>
-        <p className="font-bold text-heading">{PHOTO_GUIDE}</p>
-        <p className="text-sm text-muted">Con buena luz, sin reflejos y con la caja de frente.</p>
+        <p className="font-bold text-heading">{guide}</p>
+        <p className="text-sm text-muted">{hint}</p>
 
         <input
           ref={cameraRef}
           type="file"
           accept="image/*"
           capture="environment"
-          onChange={onFile}
+          onChange={onChange}
           className="hidden"
           tabIndex={-1}
           aria-hidden="true"
@@ -260,7 +378,7 @@ function MedicinePanel({ initialRemaining, limit }: { initialRemaining: number; 
           ref={galleryRef}
           type="file"
           accept="image/*"
-          onChange={onFile}
+          onChange={onChange}
           className="hidden"
           tabIndex={-1}
           aria-hidden="true"
@@ -280,30 +398,65 @@ function MedicinePanel({ initialRemaining, limit }: { initialRemaining: number; 
             Elegir de la galería
           </Button>
         </div>
-        <p className="text-sm text-muted">
-          {outOfQuota ? "Ya usaste tus fotos de hoy. Vuelve mañana." : "La foto no se guarda: solo se usa para leer el empaque."}
-        </p>
+        <p className="text-sm text-muted">{outOfQuota ? "Ya usaste tus fotos de hoy. Vuelve mañana." : privacy}</p>
       </Card>
+    </>
+  );
+}
+
+function PendingStatus({ children }: { children: ReactNode }) {
+  return (
+    <p role="status" className="flex items-center justify-center gap-2 font-bold text-heading">
+      <span
+        aria-hidden="true"
+        className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
+      />
+      {children}
+    </p>
+  );
+}
+
+function AlertBox({ children }: { children: ReactNode }) {
+  return (
+    <p role="alert" className="rounded-xl bg-warning-soft p-3 font-bold text-on-warning-soft">
+      {children}
+    </p>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Medicine panel
+// -----------------------------------------------------------------------------
+
+function MedicinePanel({ remaining, limit, onRemaining }: QuotaProps) {
+  const { preview, pending, outcome, identify } = usePhotoIdentify<IdentifyApiSuccess>("medicine", onRemaining);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PhotoPicker
+        remaining={remaining}
+        limit={limit}
+        preview={preview}
+        pending={pending}
+        guide={PHOTO_GUIDE}
+        hint="Con buena luz, sin reflejos y con la caja de frente."
+        privacy="La foto no se guarda: solo se usa para leer el empaque."
+        onFile={identify}
+        placeholder={
+          <div className="flex flex-col items-center gap-2 px-6">
+            <Icon name="camera" size={40} />
+            <span className="flex h-10 w-32 items-center justify-center rounded-md border-2 border-current text-xs font-bold">
+              NOMBRE
+            </span>
+          </div>
+        }
+      />
 
       <div aria-live="polite" className="flex flex-col gap-4">
-        {pending && (
-          <p role="status" className="flex items-center justify-center gap-2 font-bold text-heading">
-            <span
-              aria-hidden="true"
-              className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
-            />
-            Leyendo el empaque…
-          </p>
-        )}
-        {outcome?.kind === "error" && (
-          <p role="alert" className="rounded-xl bg-warning-soft p-3 font-bold text-on-warning-soft">
-            {outcome.message}
-          </p>
-        )}
+        {pending && <PendingStatus>Leyendo el empaque…</PendingStatus>}
+        {outcome?.kind === "error" && <AlertBox>{outcome.message}</AlertBox>}
         {outcome?.kind === "result" && outcome.data.status === "unreadable" && (
-          <p role="alert" className="rounded-xl bg-warning-soft p-3 font-bold text-on-warning-soft">
-            {outcome.data.message}
-          </p>
+          <AlertBox>{outcome.data.message}</AlertBox>
         )}
         {outcome?.kind === "result" && outcome.data.status === "verified" && (
           <VerifiedResult medicine={outcome.data.medicine} />
@@ -316,15 +469,131 @@ function MedicinePanel({ initialRemaining, limit }: { initialRemaining: number; 
   );
 }
 
-function FoodPanel() {
+// -----------------------------------------------------------------------------
+// Food panel
+// -----------------------------------------------------------------------------
+
+/** Browsable list of dishes for people without a photo. */
+function DishList({ foods }: { foods: FoodCard[] | null }) {
+  const [query, setQuery] = useState("");
+  const inputId = useId();
+  const headingId = useId();
+
+  const q = normalizeText(query);
+  const visible = (foods ?? []).filter(
+    (f) =>
+      !q ||
+      normalizeText(f.name).includes(q) ||
+      f.keywords.some((k) => normalizeText(k).includes(q)) ||
+      normalizeText(f.mainIngredients ?? "").includes(q),
+  );
+
   return (
-    <Card className="flex flex-col items-center gap-3 py-8 text-center">
-      <span className="flex size-14 items-center justify-center rounded-full bg-accent-soft text-on-accent-soft">
-        <Icon name="camera" size={28} />
-      </span>
-      <Badge variant="warning">Próximamente</Badge>
-      <p className="text-muted">Pronto podrás fotografiar un plato y saber qué es y a qué se parece en Colombia.</p>
-    </Card>
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        <h2 id={headingId} className="text-xl font-extrabold text-heading">
+          Platos típicos
+        </h2>
+        <p className="text-muted">¿No tienes foto? Busca el plato en la lista.</p>
+      </div>
+
+      {foods === null ? (
+        <AlertBox>No pudimos cargar la lista de platos. Revisa tu conexión e inténtalo de nuevo.</AlertBox>
+      ) : foods.length === 0 ? (
+        <p className="text-muted">Aún no hay platos publicados. Vuelve pronto.</p>
+      ) : (
+        <>
+          <div className="flex flex-col gap-1">
+            <label htmlFor={inputId} className="text-sm font-bold text-heading">
+              Buscar plato o ingrediente
+            </label>
+            <input
+              id={inputId}
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Ej.: ceviche, plátano"
+              className="min-h-11 rounded-xl border border-border bg-surface px-3 text-base text-foreground placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            />
+          </div>
+          <p aria-live="polite" className="text-sm text-muted">
+            {visible.length === 1 ? "1 plato" : `${visible.length} platos`}
+          </p>
+          <ul className="flex flex-col gap-3">
+            {visible.map((food) => (
+              <li key={food.id}>
+                <details className="group rounded-2xl border border-border/30 bg-surface shadow-sm">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-2xl p-4 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+                    <span className="flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="font-bold text-heading">{food.name}</span>
+                      {food.verifiedAt === null && (
+                        <Badge variant="warning" className="self-start">
+                          Pendiente de verificación
+                        </Badge>
+                      )}
+                    </span>
+                    <span className="text-muted transition-transform group-open:rotate-90 motion-reduce:transition-none">
+                      <Icon name="chevron-right" />
+                    </span>
+                  </summary>
+                  <div className="px-4 pb-4">
+                    <FoodDetails food={food} />
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ul>
+          {visible.length === 0 && (
+            <p className="text-muted">No encontramos ese plato. Prueba con otro nombre o toma una foto.</p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function FoodPanel({ remaining, limit, onRemaining, foods }: QuotaProps & { foods: FoodCard[] | null }) {
+  const { preview, pending, outcome, identify } = usePhotoIdentify<FoodApiSuccess>("food", onRemaining);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PhotoPicker
+        remaining={remaining}
+        limit={limit}
+        preview={preview}
+        pending={pending}
+        guide={FOOD_PHOTO_GUIDE}
+        hint="Con buena luz y sin otros platos alrededor."
+        privacy="La foto no se guarda: solo se usa para reconocer el plato."
+        onFile={identify}
+        placeholder={
+          <div className="flex flex-col items-center gap-2 px-6">
+            <Icon name="camera" size={40} />
+            <span className="size-16 rounded-full border-2 border-current" />
+          </div>
+        }
+      />
+
+      <div aria-live="polite" className="flex flex-col gap-4">
+        {pending && <PendingStatus>Reconociendo el plato…</PendingStatus>}
+        {outcome?.kind === "error" && <AlertBox>{outcome.message}</AlertBox>}
+        {outcome?.kind === "result" && outcome.data.status === "unreadable" && (
+          <AlertBox>{outcome.data.message}</AlertBox>
+        )}
+        {outcome?.kind === "result" && outcome.data.status === "verified" && (
+          <FoodVerifiedResult food={outcome.data.food} />
+        )}
+        {outcome?.kind === "result" && outcome.data.status === "ai" && (
+          <FoodAiResult
+            reading={outcome.data.reading}
+            description={outcome.data.description}
+            allergenNote={outcome.data.allergenNote}
+          />
+        )}
+      </div>
+
+      <DishList foods={foods} />
+    </div>
   );
 }
 
@@ -337,8 +606,20 @@ const TABS: { id: IdentifyKind; label: string }[] = [
   { id: "food", label: "Comida" },
 ];
 
-export function IdentifyClient({ initialRemaining, limit }: { initialRemaining: number; limit: number }) {
+export function IdentifyClient({
+  initialRemaining,
+  limit,
+  foods,
+}: {
+  initialRemaining: number;
+  limit: number;
+  /** Published dishes, or null when they could not be loaded. */
+  foods: FoodCard[] | null;
+}) {
   const [active, setActive] = useState<IdentifyKind>("medicine");
+  // Medicine and food photos share one daily quota.
+  const [remaining, setRemaining] = useState(initialRemaining);
+  const quota = { remaining, limit, onRemaining: setRemaining };
   const tabRefs = useRef<Record<IdentifyKind, HTMLButtonElement | null>>({ medicine: null, food: null });
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -396,11 +677,7 @@ export function IdentifyClient({ initialRemaining, limit }: { initialRemaining: 
           aria-labelledby={`tab-${tab.id}`}
           hidden={tab.id !== active}
         >
-          {tab.id === "medicine" ? (
-            <MedicinePanel initialRemaining={initialRemaining} limit={limit} />
-          ) : (
-            <FoodPanel />
-          )}
+          {tab.id === "medicine" ? <MedicinePanel {...quota} /> : <FoodPanel {...quota} foods={foods} />}
         </div>
       ))}
     </div>

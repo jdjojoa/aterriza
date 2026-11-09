@@ -1,15 +1,31 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getCurrentProfile } from "@/lib/auth";
+import { FOOD_COLUMNS, toFoodCard, type FoodCard } from "@/lib/foods";
 import { getUsage } from "@/lib/rate-limit";
+import { createClient } from "@/lib/supabase/server";
 import { IdentifyClient } from "./IdentifyClient";
 
 export const metadata: Metadata = { title: "Identificar · Aterriza" };
 
+async function loadFoods(): Promise<FoodCard[] | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("foods")
+    .select(FOOD_COLUMNS)
+    .eq("is_published", true)
+    .order("name");
+  if (error) {
+    console.error("[identificar] foods error", error.message);
+    return null;
+  }
+  return data.map(toFoodCard);
+}
+
 async function IdentifyData() {
   const profile = await getCurrentProfile();
-  const usage = await getUsage(profile.id, "photo_medicine");
-  return <IdentifyClient initialRemaining={usage.remaining} limit={usage.limit} />;
+  const [usage, foods] = await Promise.all([getUsage(profile.id, "photo_medicine"), loadFoods()]);
+  return <IdentifyClient initialRemaining={usage.remaining} limit={usage.limit} foods={foods} />;
 }
 
 function IdentifySkeleton() {

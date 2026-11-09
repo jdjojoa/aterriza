@@ -386,6 +386,16 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      search_foods: {
+        Args: { p_name: string; p_limit?: number };
+        Returns: (ContentRow & FoodFields)[];
+        SetofOptions: {
+          from: "*";
+          to: "foods";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

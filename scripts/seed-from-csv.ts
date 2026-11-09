@@ -7,8 +7,8 @@
  * Uses SUPABASE_SERVICE_ROLE_KEY from .env.local (bypasses RLS). Run it only on
  * your machine; never import this file from app code.
  *
- * Matching ("upsert"): a row with `id` updates that row. Otherwise places match
- * by `name`, transport_routes by `code` (or `name` when code is empty). Matching
+ * Matching ("upsert"): a row with `id` updates that row. Otherwise places and
+ * foods match by `name`, transport_routes by `code` (or `name` when code is empty). Matching
  * rows are updated, the rest are inserted. Nothing is ever deleted.
  */
 import { readFileSync, existsSync } from "node:fs";
@@ -16,9 +16,9 @@ import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../src/types/database";
 
-type TableName = "places" | "transport_routes";
-type Value = string | number | boolean | null | [number, number][];
-type Kind = "text" | "number" | "boolean" | "date" | "uuid" | "path" | "url";
+type TableName = "places" | "transport_routes" | "foods";
+type Value = string | number | boolean | null | string[] | [number, number][];
+type Kind = "text" | "number" | "boolean" | "date" | "uuid" | "path" | "url" | "list";
 type Column = { kind: Kind; required?: boolean; oneOf?: readonly string[] };
 
 const DATA_DIR = resolve(process.cwd(), "supabase/seed/data");
@@ -77,6 +77,21 @@ const TABLES: { table: TableName; keys: string[]; columns: Record<string, Column
       fare_max: { kind: "number" },
       schedule: { kind: "text" },
       tips: { kind: "text" },
+      ...common,
+    },
+  },
+  {
+    table: "foods",
+    keys: ["name"],
+    columns: {
+      id: { kind: "uuid" },
+      name: { kind: "text", required: true },
+      description: { kind: "text" },
+      main_ingredients: { kind: "text" },
+      similar_co: { kind: "text" },
+      where_to_try: { kind: "text" },
+      image_url: { kind: "url" },
+      keywords: { kind: "list" },
       ...common,
     },
   },
@@ -143,13 +158,15 @@ function convert(raw: string, col: Column, delimiter: string): Value {
   const v = raw.trim();
   if (v === "") {
     if (col.required) throw new Error("es obligatorio");
-    return null;
+    return col.kind === "list" ? [] : null; // text[] columns are NOT NULL
   }
   switch (col.kind) {
     case "text":
       if (col.oneOf && !col.oneOf.includes(v))
         throw new Error(`"${v}" no es válido; usa uno de: ${col.oneOf.join(", ")}`);
       return v;
+    case "list": // "cebiche|seviche" -> ["cebiche", "seviche"]
+      return [...new Set(v.split("|").map((x) => x.trim()).filter(Boolean))];
     case "url":
       if (!/^https?:\/\//i.test(v)) throw new Error(`"${v}" debe empezar por http:// o https://`);
       return v;
