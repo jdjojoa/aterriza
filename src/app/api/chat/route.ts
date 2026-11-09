@@ -25,6 +25,44 @@ function enforceWording(text: string) {
     .replace(/\*\*|__|^#+\s*/gm, ""); // plain text: drop stray Markdown
 }
 
+// "S/ 3", "S/. 2.50", "3 soles", "5 a 6 soles", "10 mil pesos", "2 dólares", "1 USD", "$5"…
+const MONEY =
+  /S\/\.?\s?\d|\d+(?:[.,]\d+)?(?:\s*(?:a|y|-|–)\s*\d+(?:[.,]\d+)?)?\s*(?:mil\s+)?(?:soles?|pesos?|d[oó]lares?|usd|pen|cop|lucas?)\b|\$\s?\d/i;
+const NO_PRICE =
+  "No tengo un precio verificado. Te recomiendo preguntar y acordar el precio antes de subir o comprar.";
+
+/**
+ * Project rule: no money amounts without a source. Drop every sentence that
+ * contains an amount unless that same sentence cites a context row ([F1], [C1]…).
+ * Runs before resolveCitations, while the markers are still [F1]/[C1].
+ */
+const CITATION = /\[(?:F|C)\d+\]/;
+const unsourcedMoney = (sentence: string) => MONEY.test(sentence) && !CITATION.test(sentence);
+
+function stripUnsourcedPrices(text: string) {
+  if (!MONEY.test(text)) return text;
+  let removed = false;
+  const kept = text
+    .split("\n")
+    .map((line) =>
+      line
+        // Split only before a new sentence, so "S/. 10" stays in one piece.
+        .split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿¡-])/)
+        .filter((sentence) => {
+          const drop = unsourcedMoney(sentence);
+          removed ||= drop;
+          return !drop;
+        })
+        .join(" "),
+    )
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (!removed) return text;
+  if (kept.includes("No tengo un precio verificado")) return kept;
+  return kept ? `${NO_PRICE}\n\n${kept}` : NO_PRICE;
+}
+
 /** The off-topic sentence must stand alone; drop it when appended to a real answer. */
 function stripStrayOffTopic(text: string, city: string) {
   const sentence = offTopicReply(city);
@@ -136,7 +174,7 @@ async function handleChat(request: Request) {
   }
 
   const { text: reply, sources } = resolveCitations(
-    stripStrayOffTopic(enforceWording(raw), city),
+    stripUnsourcedPrices(stripStrayOffTopic(enforceWording(raw), city)),
     context.sources,
   );
 
