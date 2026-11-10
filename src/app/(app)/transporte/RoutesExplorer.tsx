@@ -6,6 +6,7 @@ import { buttonClasses } from "@/components/ui/Button";
 import { SourceBadge } from "@/components/ui/SourceBadge";
 import { Icon } from "@/components/icons/Icon";
 import { DynamicMapView, type MapMarker } from "@/components/map/DynamicMapView";
+import { Reviews } from "@/components/reviews/Reviews";
 import { googleMapsDirectionsUrl, googleMapsSearchUrl, toLatLng, type LatLng } from "@/lib/maps";
 import {
   TRANSPORT_MODE_LABELS,
@@ -120,6 +121,7 @@ export function RoutesExplorer({ routes }: { routes: RouteItem[] }) {
             sourceUrl={selected.source_url}
             verifiedAt={selected.verified_at}
           />
+          <Reviews key={selected.id} targetType="route" targetId={selected.id} />
         </div>
       </section>
 

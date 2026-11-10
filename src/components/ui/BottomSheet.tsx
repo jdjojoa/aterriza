@@ -29,7 +29,11 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      onClose={onClose}
+      // React bubbles "close" through the component tree: ignore a nested
+      // dialog (e.g. the report modal inside a place sheet) closing.
+      onClose={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       // A click on the backdrop targets the <dialog> itself.
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();

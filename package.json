@@ -9,6 +9,7 @@
     "lint": "eslint",
     "check:contrast": "node scripts/check-contrast.mjs",
     "check:auth": "node scripts/check-auth-flow.mjs",
+    "check:reports": "node scripts/check-report-trigger.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "seed": "tsx scripts/seed-from-csv.ts",
     "qr": "node scripts/generate-qr.mjs"

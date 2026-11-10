@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SourceBadge } from "@/components/ui/SourceBadge";
+import { Reviews } from "@/components/reviews/Reviews";
 import { Icon } from "@/components/icons/Icon";
 import {
   AI_FOOD_NOTICE,
@@ -179,7 +180,7 @@ function AiResult({ reading, generalUse }: { reading: PackageReading; generalUse
 const PENDING_TEXT = "Pendiente de verificar.";
 
 /** Body of a dish card: shared by the photo result and the dish list. */
-function FoodDetails({ food }: { food: FoodCard }) {
+function FoodDetails({ food, showReviews = true }: { food: FoodCard; showReviews?: boolean }) {
   const note = allergenNote(detectAllergens(food.name, food.mainIngredients, food.description));
   return (
     <div className="flex flex-col gap-4">
@@ -205,6 +206,7 @@ function FoodDetails({ food }: { food: FoodCard }) {
         verifiedAt={food.verifiedAt}
         variant="verificado"
       />
+      {showReviews && <Reviews key={food.id} targetType="food" targetId={food.id} />}
     </div>
   );
 }
@@ -522,24 +524,7 @@ function DishList({ foods }: { foods: FoodCard[] | null }) {
           <ul className="flex flex-col gap-3">
             {visible.map((food) => (
               <li key={food.id}>
-                <details className="group rounded-2xl border border-border/30 bg-surface shadow-sm">
-                  <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-2xl p-4 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
-                    <span className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="font-bold text-heading">{food.name}</span>
-                      {food.verifiedAt === null && (
-                        <Badge variant="warning" className="self-start">
-                          Pendiente de verificación
-                        </Badge>
-                      )}
-                    </span>
-                    <span className="text-muted transition-transform group-open:rotate-90 motion-reduce:transition-none">
-                      <Icon name="chevron-right" />
-                    </span>
-                  </summary>
-                  <div className="px-4 pb-4">
-                    <FoodDetails food={food} />
-                  </div>
-                </details>
+                <DishItem food={food} />
               </li>
             ))}
           </ul>
@@ -549,6 +534,36 @@ function DishList({ foods }: { foods: FoodCard[] | null }) {
         </>
       )}
     </section>
+  );
+}
+
+/** Collapsible dish; reviews load only once it is opened. */
+function DishItem({ food }: { food: FoodCard }) {
+  const [opened, setOpened] = useState(false);
+  return (
+    <details
+      onToggle={(e) => {
+        if (e.currentTarget.open) setOpened(true);
+      }}
+      className="group rounded-2xl border border-border/30 bg-surface shadow-sm"
+    >
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-2xl p-4 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="font-bold text-heading">{food.name}</span>
+          {food.verifiedAt === null && (
+            <Badge variant="warning" className="self-start">
+              Pendiente de verificación
+            </Badge>
+          )}
+        </span>
+        <span className="text-muted transition-transform group-open:rotate-90 motion-reduce:transition-none">
+          <Icon name="chevron-right" />
+        </span>
+      </summary>
+      <div className="px-4 pb-4">
+        <FoodDetails food={food} showReviews={opened} />
+      </div>
+    </details>
   );
 }
 

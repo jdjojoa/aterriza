@@ -186,6 +186,29 @@ type TipRow = {
   updated_at: string;
 };
 
+/** Row of get_reviews(): author's first name instead of user_id. */
+export type ReviewListRow = {
+  id: string;
+  author_name: string;
+  rating: number;
+  body: string | null;
+  status: ReviewStatus;
+  is_own: boolean;
+  reported_by_me: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Row of get_approved_tips(). */
+export type ApprovedTipRow = {
+  id: string;
+  author_name: string;
+  category: string | null;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type ChatMessageRow = {
   id: string;
   user_id: string;
@@ -372,6 +395,14 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: {
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      get_reviews: {
+        Args: { p_target_type: ReviewTargetType; p_target_id: string };
+        Returns: ReviewListRow[];
+      };
+      get_approved_tips: {
+        Args: { p_limit?: number };
+        Returns: ApprovedTipRow[];
+      };
       search_medicines: {
         Args: {
           p_brand_name: string | null;

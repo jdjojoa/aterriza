@@ -59,6 +59,14 @@ export const SECTIONS: Section[] = [
     inNav: false,
   },
   {
+    href: "/aportes",
+    label: "Aportes",
+    description: "Comparte consejos y lee las experiencias de otros estudiantes.",
+    icon: "lightbulb",
+    available: true,
+    inNav: false,
+  },
+  {
     href: "/identificar",
     label: "Identificar",
     description: "Toma una foto de un medicamento o una comida y entiende qué es.",

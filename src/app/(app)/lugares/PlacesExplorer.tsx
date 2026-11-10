@@ -8,6 +8,7 @@ import { Chip } from "@/components/ui/Chip";
 import { SourceBadge } from "@/components/ui/SourceBadge";
 import { Icon } from "@/components/icons/Icon";
 import { DynamicMapView, type MapMarker } from "@/components/map/DynamicMapView";
+import { Reviews } from "@/components/reviews/Reviews";
 import { googleMapsSearchUrl, toLatLng } from "@/lib/maps";
 import { PLACE_CATEGORIES, placeCategoryLabel, type PlaceItem } from "@/lib/places";
 import type { PlaceCategory } from "@/types/database";
@@ -180,6 +181,7 @@ function PlaceDetails({ place }: { place: PlaceItem }) {
         sourceUrl={place.source_url}
         verifiedAt={place.verified_at}
       />
+      <Reviews key={place.id} targetType="place" targetId={place.id} />
     </>
   );
 }
