@@ -11,7 +11,7 @@ vista móvil a 360 px) con la app instalada como PWA.
 
 1. En Supabase → SQL Editor, pega y ejecuta **en orden** las migraciones que falten:
    `0003_search_medicines.sql`, `0004_search_foods.sql`, `0005_search_slang.sql`,
-   `0006_community.sql`, `0007_content_images.sql`.
+   `0006_community.sql`, `0007_content_images.sql`, `0008_tips_author_edit.sql`.
    > En la revisión del 9 de noviembre **no estaban aplicadas**: sin ellas fallan
    > la identificación de medicamentos y comida, la jerga, las reseñas y los aportes.
 2. Ejecuta `supabase/tests/check_rls.sql` y confirma:

@@ -1,10 +1,13 @@
+import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { AuthErrorNotice } from "@/components/AuthErrorNotice";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { InstallAppButton } from "@/components/InstallAppButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Logo } from "@/components/Logo";
+import { buttonClasses } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { createClient } from "@/lib/supabase/server";
 
 const BENEFITS: { title: string; text: string; icon: ReactNode }[] = [
   {
@@ -39,11 +42,59 @@ const BENEFITS: { title: string; text: string; icon: ReactNode }[] = [
   },
 ];
 
+/** True when the request carries a valid session (reads cookies: render inside <Suspense>). */
+async function hasSession() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  return Boolean(data?.claims?.sub);
+}
+
+/**
+ * Header action: "Entrar" starts Google sign-in (also sign-up: first-time
+ * users land on /onboarding), "Ir a la app" when already signed in.
+ * Signed-in users who have not finished onboarding are redirected by the proxy.
+ */
+async function HeaderAuthAction() {
+  if (await hasSession()) {
+    return (
+      <Link href="/inicio" className={buttonClasses("primary", "md")}>
+        Ir a la app
+      </Link>
+    );
+  }
+  return <GoogleSignInButton label="Entrar" size="md" compact />;
+}
+
+async function MainAuthAction() {
+  if (await hasSession()) {
+    return (
+      <Link href="/inicio" className={buttonClasses("primary", "lg", "w-full")}>
+        Ir a la app
+      </Link>
+    );
+  }
+  return <GoogleSignInButton />;
+}
+
 export default function Home() {
   return (
     <>
-      <header className="flex justify-end px-4 pt-4">
-        <ThemeToggle />
+      <header className="sticky top-0 z-20 border-b border-border/20 bg-background/95 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-md items-center justify-between gap-2 px-4 py-2">
+          <Link
+            href="/"
+            className="flex items-center gap-2 rounded-xl text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            <Logo size={36} />
+            <span className="hidden text-lg font-extrabold min-[400px]:inline">Aterriza</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Suspense fallback={<div aria-hidden="true" className="h-11 w-24 rounded-xl bg-accent-soft" />}>
+              <HeaderAuthAction />
+            </Suspense>
+          </div>
+        </div>
       </header>
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-4 pb-10 pt-6">
       <section className="flex flex-col items-center gap-3 text-center">
@@ -86,7 +137,9 @@ export default function Home() {
         <Suspense fallback={null}>
           <AuthErrorNotice />
         </Suspense>
-        <GoogleSignInButton />
+        <Suspense fallback={<div aria-hidden="true" className="h-12 w-full rounded-xl bg-accent-soft" />}>
+          <MainAuthAction />
+        </Suspense>
         <InstallAppButton />
       </div>
       </main>

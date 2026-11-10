@@ -46,6 +46,7 @@ async function expectOk(path, cookie, contains) {
 // 1. Anonymous
 console.log("-- anonymous");
 await expectOk("/", null, "Entrar con Google");
+await expectOk("/", null, ">Entrar<");
 for (const p of ["/inicio", "/perfil", "/chat", "/onboarding", "/admin"]) await expectRedirect(p, "/", null);
 await expectRedirect("/auth/callback", "/?error=auth", null);
 await expectRedirect("/auth/callback?code=invalid", "/?error=auth", null);
@@ -106,8 +107,8 @@ try {
   const esc = await rest(`/profiles?id=eq.${user.id}`, { method: "PATCH", body: JSON.stringify({ role: "admin" }) });
   check("user cannot make itself admin", !esc.ok, `${esc.status}`);
 
-  // Onboarded
-  await expectRedirect("/", "/inicio", cookie);
+  // Onboarded: the landing stays reachable and offers "Ir a la app".
+  await expectOk("/", cookie, "Ir a la app");
   await expectRedirect("/onboarding", "/inicio", cookie);
   await expectRedirect("/admin", "/inicio", cookie);
   await expectOk("/inicio", cookie, "Laura");

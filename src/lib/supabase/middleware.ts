@@ -79,7 +79,8 @@ export async function updateSession(request: NextRequest) {
   if (!profile.onboarded) {
     return isOnboardingPath(pathname) ? supabaseResponse : redirectTo("/onboarding");
   }
-  if (isLanding || isOnboardingPath(pathname)) return redirectTo("/inicio");
+  // Onboarded users may still open the landing: it shows "Ir a la app".
+  if (isOnboardingPath(pathname)) return redirectTo("/inicio");
   if (isAdminPath(pathname) && profile.role !== "admin") return redirectTo("/inicio");
 
   // Return supabaseResponse as-is so refreshed cookies reach the browser.

@@ -3,6 +3,7 @@
 // service role key: the author submits a tip, the admin approves it like
 // moderateTip() does, and the other student must then see it both with a plain
 // select (RLS) and through get_approved_tips (what /aportes uses).
+// Then the author edits it (back to pending) and deletes it (0008).
 // Everything is deleted at the end (users cascade to profiles and tips).
 // Usage: npm run check:tips
 import { readFileSync } from "node:fs";
@@ -110,6 +111,41 @@ try {
     body: JSON.stringify({ p_limit: 1 }),
   });
   check("get_approved_tips denied to anonymous visitors", !anon.ok, `${anon.status}`);
+
+  // --- Author edit/delete (supabase/migrations/0008_tips_author_edit.sql) ---
+  const editedBody = `Aporte editado ${randomUUID()}`;
+  const otherEdit = await (await other.rest(`/tips?id=eq.${tip.id}`, { method: "PATCH", body: JSON.stringify({ body: "hack" }) })).json();
+  check("other user cannot edit the tip", Array.isArray(otherEdit) && otherEdit.length === 0, JSON.stringify(otherEdit));
+
+  // Same update as updateTip() in src/app/(app)/aportes/actions.ts.
+  const edit = await author.rest(`/tips?id=eq.${tip.id}&select=id,body,status,reviewed_by`, {
+    method: "PATCH",
+    body: JSON.stringify({ category: "transporte", body: editedBody, status: "pending", reviewed_by: null }),
+  });
+  const edited = await edit.json();
+  check(
+    "author edits approved tip -> back to pending",
+    edit.ok && edited[0]?.body === editedBody && edited[0]?.status === "pending" && edited[0]?.reviewed_by === null,
+    `${edit.status} ${JSON.stringify(edited)} (0008_tips_author_edit.sql applied?)`,
+  );
+
+  // Even a crafted request that asks for 'approved' must end up pending.
+  const sneaky = await author.rest(`/tips?id=eq.${tip.id}&select=status`, { method: "PATCH", body: JSON.stringify({ body: `${editedBody}!`, status: "approved" }) });
+  const sneakyRows = await sneaky.json();
+  check("author cannot self-approve on edit", !sneaky.ok || sneakyRows[0]?.status === "pending", `${sneaky.status} ${JSON.stringify(sneakyRows)}`);
+
+  const hidden = await (await other.rest(`/tips?id=eq.${tip.id}&select=id`)).json();
+  check("edited tip hidden from others until re-approved", Array.isArray(hidden) && hidden.length === 0, JSON.stringify(hidden));
+
+  const otherDel = await (await other.rest(`/tips?id=eq.${tip.id}`, { method: "DELETE" })).json();
+  check("other user cannot delete the tip", Array.isArray(otherDel) && otherDel.length === 0, JSON.stringify(otherDel));
+
+  // Same delete as deleteTip().
+  const del = await author.rest(`/tips?id=eq.${tip.id}&select=id`, { method: "DELETE" });
+  const deleted = await del.json();
+  check("author deletes own tip", del.ok && deleted.length === 1, `${del.status} ${JSON.stringify(deleted)}`);
+  const gone = await (await admin(`/rest/v1/tips?id=eq.${tip.id}&select=id`)).json();
+  check("tip removed from the database", Array.isArray(gone) && gone.length === 0, JSON.stringify(gone));
 } catch (error) {
   check("unexpected error", false, error.message);
 } finally {

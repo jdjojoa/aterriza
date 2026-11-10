@@ -7,6 +7,7 @@ import { formatShortDate, tipCategoryLabel } from "@/lib/community";
 import { createClient } from "@/lib/supabase/server";
 import type { TipStatus } from "@/types/database";
 import { ApprovedTips } from "./ApprovedTips";
+import { MyTipCard } from "./MyTipCard";
 import { TipForm } from "./TipForm";
 
 export const metadata: Metadata = { title: "Aportes · Aterriza" };
@@ -47,16 +48,22 @@ async function MyTips() {
   return (
     <ul className="flex flex-col gap-3">
       {data.map((t) => (
-        <li key={t.id} className="flex flex-col gap-2 rounded-2xl border border-border/30 bg-surface p-4 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={t.status} />
-            <span className="text-sm font-bold text-heading">{tipCategoryLabel(t.category)}</span>
-            <time dateTime={t.created_at} className="text-sm text-muted">
-              {formatShortDate(t.created_at)}
-            </time>
-          </div>
-          <p className="whitespace-pre-line break-words text-foreground">{t.body}</p>
-        </li>
+        <MyTipCard
+          key={t.id}
+          id={t.id}
+          category={t.category}
+          body={t.body}
+          status={t.status}
+          header={
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={t.status} />
+              <span className="text-sm font-bold text-heading">{tipCategoryLabel(t.category)}</span>
+              <time dateTime={t.created_at} className="text-sm text-muted">
+                {formatShortDate(t.created_at)}
+              </time>
+            </div>
+          }
+        />
       ))}
     </ul>
   );

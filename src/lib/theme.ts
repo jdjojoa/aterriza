@@ -1,33 +1,38 @@
-export type ThemeMode = "system" | "light" | "dark";
+export type ThemeMode = "light" | "dark";
 
 export const THEME_STORAGE_KEY = "theme";
 const THEME_EVENT = "aterriza:theme";
+const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 /**
  * Inline script injected in <head>. Runs during HTML parsing, before the
- * first paint, so the stored theme never flashes.
+ * first paint, so the stored theme never flashes. With no stored choice
+ * (first visit) it follows the system preference.
  */
-export const themeScript = `(function(){try{var t=localStorage.getItem("${THEME_STORAGE_KEY}");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);var c=document.documentElement.classList;d?c.add("dark"):c.remove("dark")}catch(e){}})()`;
+export const themeScript = `(function(){try{var t=localStorage.getItem("${THEME_STORAGE_KEY}");var d=t==="dark"||(t!=="light"&&matchMedia("${DARK_QUERY}").matches);var c=document.documentElement.classList;d?c.add("dark"):c.remove("dark")}catch(e){}})()`;
 
-function isThemeMode(value: unknown): value is ThemeMode {
-  return value === "system" || value === "light" || value === "dark";
-}
-
-export function readThemeMode(): ThemeMode {
+/** The user's explicit choice, or null when they never picked one. */
+function readStoredMode(): ThemeMode | null {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    return isThemeMode(stored) ? stored : "system";
+    // Old builds could store "system": treat it like no choice.
+    return stored === "light" || stored === "dark" ? stored : null;
   } catch {
-    return "system";
+    return null;
   }
 }
 
+function systemMode(): ThemeMode {
+  return window.matchMedia(DARK_QUERY).matches ? "dark" : "light";
+}
+
+/** Effective theme: the stored choice, else the system preference. */
+export function readThemeMode(): ThemeMode {
+  return readStoredMode() ?? systemMode();
+}
+
 export function applyThemeMode(mode: ThemeMode) {
-  const dark =
-    mode === "dark" ||
-    (mode === "system" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
-  document.documentElement.classList.toggle("dark", dark);
+  document.documentElement.classList.toggle("dark", mode === "dark");
 }
 
 export function setThemeMode(mode: ThemeMode) {
@@ -41,9 +46,10 @@ export function setThemeMode(mode: ThemeMode) {
 }
 
 export function subscribeThemeMode(onChange: () => void) {
-  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  const media = window.matchMedia(DARK_QUERY);
+  // Until the user picks a theme, keep following the system preference.
   const onMedia = () => {
-    if (readThemeMode() === "system") applyThemeMode("system");
+    if (readStoredMode() === null) applyThemeMode(systemMode());
     onChange();
   };
   const onStorage = (event: StorageEvent) => {

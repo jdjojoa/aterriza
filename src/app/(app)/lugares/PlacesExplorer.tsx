@@ -9,7 +9,7 @@ import { SourceBadge } from "@/components/ui/SourceBadge";
 import { Icon } from "@/components/icons/Icon";
 import { DynamicMapView, type MapMarker } from "@/components/map/DynamicMapView";
 import { Reviews } from "@/components/reviews/Reviews";
-import { googleMapsSearchUrl, toLatLng } from "@/lib/maps";
+import { googleMapsPlaceUrl, toLatLng } from "@/lib/maps";
 import { PLACE_CATEGORIES, placeCategoryLabel, type PlaceItem } from "@/lib/places";
 import type { PlaceCategory } from "@/types/database";
 
@@ -150,10 +150,7 @@ function Detail({ label, value }: { label: string; value: string | null }) {
 }
 
 function PlaceDetails({ place }: { place: PlaceItem }) {
-  const point = toLatLng(place.lat, place.lng);
-  const mapsUrl = point
-    ? googleMapsSearchUrl(point)
-    : googleMapsSearchUrl([place.name, place.address, "Piura"].filter(Boolean).join(", "));
+  const mapsUrl = googleMapsPlaceUrl(place);
 
   return (
     <>

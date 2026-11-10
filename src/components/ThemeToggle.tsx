@@ -11,16 +11,6 @@ import {
 
 const OPTIONS: { mode: ThemeMode; label: string; icon: ReactNode }[] = [
   {
-    mode: "system",
-    label: "Sistema",
-    icon: (
-      <>
-        <rect x="3" y="4" width="18" height="12" rx="2" />
-        <path d="M8 20h8M12 16v4" />
-      </>
-    ),
-  },
-  {
     mode: "light",
     label: "Claro",
     icon: (
@@ -41,7 +31,8 @@ export function ThemeToggle() {
   const mode = useSyncExternalStore(
     subscribeThemeMode,
     readThemeMode,
-    () => "system" as ThemeMode,
+    // Unknown on the server: no option is selected until hydration.
+    () => null,
   );
 
   // React's dev remount resets <html> attributes; re-apply before paint.
