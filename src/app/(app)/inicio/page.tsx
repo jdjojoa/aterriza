@@ -7,13 +7,13 @@ import { Icon } from "@/components/icons/Icon";
 import { InstallAppButton } from "@/components/InstallAppButton";
 import { firstName, getCurrentProfile } from "@/lib/auth";
 import { MAX_MESSAGE_LENGTH } from "@/lib/chat";
-import { formatShortDate, tipCategoryLabel } from "@/lib/community";
 import { countryName } from "@/lib/countries";
 import { CURRENCIES, currencyForCountry, formatAmount, type Currency } from "@/lib/currency";
 import { getExchangeRates } from "@/lib/exchange-rates";
 import { SECTIONS } from "@/lib/sections";
 import { wordOfDayIndex } from "@/lib/slang";
 import { createClient } from "@/lib/supabase/server";
+import { LatestTipsList } from "./LatestTipsList";
 
 export const metadata: Metadata = { title: "Inicio · Aterriza" };
 
@@ -270,22 +270,12 @@ async function LatestTips() {
         <Icon name="lightbulb" size={18} />
         Últimos aportes
       </h2>
-      <ul className="flex flex-col divide-y divide-border/20">
-        {data.map((t) => (
-          <li key={t.id} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
-            <p className="line-clamp-3 break-words text-sm text-foreground">{t.body}</p>
-            <p className="text-xs text-muted">
-              <span className="font-bold text-heading">{t.author_name}</span> · {tipCategoryLabel(t.category)} ·{" "}
-              <time dateTime={t.created_at}>{formatShortDate(t.created_at)}</time>
-            </p>
-          </li>
-        ))}
-      </ul>
+      <LatestTipsList tips={data} />
       <Link
         href="/aportes"
         className={`flex min-h-11 items-center gap-1 self-start rounded-xl text-sm font-bold text-link ${focusRing}`}
       >
-        Ver todos y reportar <Icon name="chevron-right" size={16} />
+        Ver todos los aportes <Icon name="chevron-right" size={16} />
       </Link>
     </section>
   );
