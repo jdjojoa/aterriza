@@ -37,7 +37,9 @@ async function expectRedirect(path, to, cookie) {
 }
 async function expectOk(path, cookie, contains) {
   const r = await get(path, cookie);
-  const ok = r.status === 200 && (!contains || r.text.includes(contains));
+  // React splits adjacent text nodes with <!-- --> in SSR HTML; compare visible text.
+  const html = r.text.replaceAll("<!-- -->", "");
+  const ok = r.status === 200 && (!contains || html.includes(contains));
   check(`${path} 200${contains ? ` contains "${contains}"` : ""}`, ok, `${r.status} ${r.location ?? ""}`);
 }
 
@@ -110,9 +112,9 @@ try {
   await expectRedirect("/admin", "/inicio", cookie);
   await expectOk("/inicio", cookie, "Laura");
   await expectOk("/inicio", cookie, "Colombia → Piura");
-  await expectOk("/inicio", cookie, "Próximamente");
+  await expectOk("/inicio", cookie, "href=\"/aportes\"");
   await expectOk("/perfil", cookie, "Laura Prueba Gómez");
-  await expectOk("/identificar", cookie, "Próximamente");
+  await expectOk("/identificar", cookie, "Identificar");
   await expectOk("/chat", cookie, "Chat");
 
   // Profile edit (same update the /perfil Server Action runs)
