@@ -14,7 +14,7 @@ export const UNREADABLE_MESSAGE = "No pude leer el empaque, toma otra foto con e
 
 /** Fixed notice for AI-generated medicine info (shown verbatim in a box). */
 export const AI_MEDICINE_NOTICE =
-  "Información referencial generada por IA. No es una recomendación médica. Consulta a un farmacéutico o médico. Dos productos con el mismo principio activo no son necesariamente intercambiables.";
+  "Información referencial generada por IA. No es una recomendación médica. Consulta a un farmacéutico o médico. Que dos productos tengan el mismo principio activo no los hace iguales: cualquier equivalencia es solo un equivalente referencial. Verifica el registro en DIGEMID.";
 
 /** DIGEMID public lookup of pharmaceutical products (Peru). */
 export const DIGEMID_URL = "https://opm-digemid.minsa.gob.pe/";

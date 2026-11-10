@@ -7,6 +7,7 @@ import {
 import { buildChatContext, resolveCitations } from "@/lib/chat-context";
 import { countryName } from "@/lib/countries";
 import { chatModel, getGemini, isGeminiRateLimited } from "@/lib/gemini";
+import { enforceMedicineRules, MEDICINE_TOPIC } from "@/lib/medicine-safety";
 import { buildChatSystemPrompt, offTopicReply } from "@/lib/prompts/chat";
 import { getUsage, recordUsage } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -173,10 +174,11 @@ async function handleChat(request: Request) {
     return fail(502, "failed", "No pudimos responder ahora. Intenta de nuevo.", usage.remaining);
   }
 
-  const { text: reply, sources } = resolveCitations(
-    stripUnsourcedPrices(stripStrayOffTopic(enforceWording(raw), city)),
-    context.sources,
-  );
+  let cleaned = stripUnsourcedPrices(stripStrayOffTopic(enforceWording(raw), city));
+  if (cleaned !== offTopicReply(city) && (MEDICINE_TOPIC.test(text) || MEDICINE_TOPIC.test(cleaned))) {
+    cleaned = enforceMedicineRules(cleaned);
+  }
+  const { text: reply, sources } = resolveCitations(cleaned, context.sources);
 
   // 6. Usage + history
   await recordUsage(userId, "chat");
