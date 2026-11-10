@@ -364,3 +364,35 @@ export async function moderateTip(
   refresh();
   return { status: "done", message: decision === "approved" ? "Aporte publicado." : "Aporte rechazado." };
 }
+
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
+
+/**
+ * Changes another user's role through admin_set_user_role (security definer).
+ * The SQL function re-checks is_admin(), blocks self-changes and keeps at
+ * least one admin; the checks here only give faster feedback.
+ */
+export async function setUserRole(userId: string, role: string): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (!idSchema.safeParse(userId).success || (role !== "user" && role !== "admin")) {
+    return { status: "error", message: "Solicitud no válida." };
+  }
+  if (userId === admin.id) {
+    return { status: "error", message: "No puedes cambiar tu propio rol." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_user_role", { p_user_id: userId, p_role: role });
+  if (error) {
+    console.error("[admin] role change failed", error.code, error.message);
+    // The function raises friendly Spanish messages for the business rules.
+    const known = ["No puedes cambiar tu propio rol.", "Debe quedar al menos un administrador.", "El usuario no existe."];
+    const message = known.find((m) => error.message.includes(m)) ?? dbErrorMessage(error);
+    return { status: "error", message };
+  }
+
+  refresh();
+  return { status: "done", message: role === "admin" ? "Ahora es administrador." : "Ahora es usuario." };
+}

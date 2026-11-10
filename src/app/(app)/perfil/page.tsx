@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Avatar } from "@/components/Avatar";
+import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { getCurrentProfile } from "@/lib/auth";
 import { countryName } from "@/lib/countries";
+import { ROLE_LABELS } from "@/lib/roles";
 import { ProfileForm } from "./ProfileForm";
 
 export const metadata: Metadata = { title: "Mi perfil · Aterriza" };
@@ -18,7 +20,14 @@ async function ProfileSection() {
           <p className="truncate text-lg font-bold text-heading">
             {profile.full_name || "Tu cuenta"}
           </p>
-          <p className="text-sm text-muted">
+          <Badge
+            variant={profile.role === "admin" ? "primary" : "neutral"}
+            className="mt-0.5"
+            aria-label={`Rol: ${ROLE_LABELS[profile.role]}`}
+          >
+            {ROLE_LABELS[profile.role]}
+          </Badge>
+          <p className="mt-1 text-sm text-muted">
             Destino: {countryName(profile.destination_country)} → {profile.destination_city}
           </p>
         </div>

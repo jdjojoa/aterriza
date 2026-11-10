@@ -8,6 +8,7 @@ const ITEMS = [
   { href: "/admin", label: "Panel" },
   { href: "/admin/reportes", label: "Reportes" },
   { href: "/admin/aportes", label: "Aportes" },
+  { href: "/admin/usuarios", label: "Usuarios" },
   ...CONTENT_TABLES.map((t) => ({ href: `/admin/contenido/${t}`, label: CONTENT_CONFIG[t].label })),
 ];
 

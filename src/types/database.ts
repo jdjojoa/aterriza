@@ -218,6 +218,15 @@ export type ApprovedTipRow = {
   updated_at: string;
 };
 
+export type AdminUserRow = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  origin_country: string;
+  role: UserRole;
+  created_at: string;
+};
+
 type ChatMessageRow = {
   id: string;
   user_id: string;
@@ -416,6 +425,14 @@ export type Database = {
       get_reviews: {
         Args: { p_target_type: ReviewTargetType; p_target_id: string };
         Returns: ReviewListRow[];
+      };
+      admin_list_users: {
+        Args: { p_search?: string | null; p_limit?: number };
+        Returns: AdminUserRow[];
+      };
+      admin_set_user_role: {
+        Args: { p_user_id: string; p_role: UserRole };
+        Returns: UserRole;
       };
       get_approved_tips: {
         Args: { p_limit?: number };
