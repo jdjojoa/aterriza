@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getCurrentProfile } from "@/lib/auth";
+import { MAX_MESSAGE_LENGTH } from "@/lib/chat";
 import { getUsage } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { ChatClient, type ChatItem } from "./ChatClient";
@@ -9,7 +10,9 @@ export const metadata: Metadata = { title: "Chat · Aterriza" };
 
 const HISTORY_ON_LOAD = 20;
 
-async function ChatData() {
+async function ChatData({ searchParams }: { searchParams: PageProps<"/chat">["searchParams"] }) {
+  const { q } = await searchParams;
+  const initialQuestion = typeof q === "string" ? q.trim().slice(0, MAX_MESSAGE_LENGTH) : "";
   const profile = await getCurrentProfile();
   const supabase = await createClient();
   const [usage, { data: history }] = await Promise.all([
@@ -32,6 +35,7 @@ async function ChatData() {
       initialMessages={initialMessages}
       initialRemaining={usage.remaining}
       limit={usage.limit}
+      initialQuestion={initialQuestion || undefined}
     />
   );
 }
@@ -47,12 +51,12 @@ function ChatSkeleton() {
   );
 }
 
-export default function ChatPage() {
+export default function ChatPage({ searchParams }: PageProps<"/chat">) {
   return (
     <main className="flex flex-1 flex-col gap-4">
       <h1 className="text-3xl font-extrabold tracking-tight text-heading">Chat</h1>
       <Suspense fallback={<ChatSkeleton />}>
-        <ChatData />
+        <ChatData searchParams={searchParams} />
       </Suspense>
     </main>
   );

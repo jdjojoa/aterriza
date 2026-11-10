@@ -33,3 +33,19 @@ export type SlangItem = Pick<
   | "source_url"
   | "verified_at"
 >;
+
+/**
+ * Index of the "Palabra del día" for a list of `count` terms: the same for
+ * everyone on a given calendar day in Piura (America/Lima), changing at midnight.
+ */
+export function wordOfDayIndex(count: number, now: Date = new Date()) {
+  if (count <= 0) return -1;
+  const limaDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Lima",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  const day = Math.floor(Date.parse(`${limaDate}T00:00:00Z`) / 86_400_000);
+  return day % count;
+}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { BottomNav } from "@/components/BottomNav";
+import { BottomNav, TopNav } from "@/components/BottomNav";
 import { Logo } from "@/components/Logo";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import { getCurrentProfile } from "@/lib/auth";
@@ -14,7 +14,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-border/30 bg-background">
-        <div className="mx-auto flex max-w-md items-center justify-between gap-3 px-4 py-2">
+        <div className="mx-auto flex max-w-md items-center justify-between gap-3 px-4 py-2 lg:max-w-[1100px]">
           <Link
             href="/inicio"
             className="flex items-center gap-2 rounded-xl font-extrabold text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -22,6 +22,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             <Logo size={32} title="" />
             Aterriza
           </Link>
+          <TopNav />
           <Suspense
             fallback={
               <span
@@ -34,7 +35,8 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           </Suspense>
         </div>
       </header>
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-24 pt-6">
+      {/* Pages that mark themselves data-wide (e.g. /inicio) use up to 1100 px on desktop. */}
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-24 pt-6 lg:pb-10 lg:has-[[data-wide]]:max-w-[1100px]">
         {children}
       </div>
       <BottomNav />

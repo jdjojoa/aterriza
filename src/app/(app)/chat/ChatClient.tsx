@@ -126,11 +126,14 @@ export function ChatClient({
   initialMessages,
   initialRemaining,
   limit,
+  initialQuestion,
 }: {
   city: string;
   initialMessages: ChatItem[];
   initialRemaining: number;
   limit: number;
+  /** Question typed on /inicio (?q=…), sent once on arrival. */
+  initialQuestion?: string;
 }) {
   const [messages, setMessages] = useState<ChatItem[]>(initialMessages);
   const [remaining, setRemaining] = useState(initialRemaining);
@@ -144,6 +147,16 @@ export function ChatClient({
   }, [messages.length, pending]);
 
   const outOfQuota = remaining <= 0;
+
+  // Send the question from /inicio once, then drop ?q= so a reload does not resend it.
+  const sentInitial = useRef(false);
+  useEffect(() => {
+    if (!initialQuestion || sentInitial.current) return;
+    sentInitial.current = true;
+    window.history.replaceState(null, "", "/chat");
+    void send(initialQuestion);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
+  }, []);
 
   async function send(question: string) {
     const text = question.trim();
@@ -246,7 +259,7 @@ export function ChatClient({
 
       <form
         onSubmit={onSubmit}
-        className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] mt-auto flex items-end gap-2 rounded-2xl border border-border/30 bg-background/95 p-2 shadow-sm backdrop-blur"
+        className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] mt-auto lg:bottom-4 flex items-end gap-2 rounded-2xl border border-border/30 bg-background/95 p-2 shadow-sm backdrop-blur"
       >
         <label htmlFor="chat-input" className="sr-only">
           Escribe tu pregunta

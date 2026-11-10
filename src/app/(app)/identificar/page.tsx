@@ -22,10 +22,12 @@ async function loadFoods(): Promise<FoodCard[] | null> {
   return data.map(toFoodCard);
 }
 
-async function IdentifyData() {
+async function IdentifyData({ searchParams }: { searchParams: PageProps<"/identificar">["searchParams"] }) {
+  const { tipo } = await searchParams;
+  const initialTab = tipo === "comida" ? "food" : "medicine";
   const profile = await getCurrentProfile();
   const [usage, foods] = await Promise.all([getUsage(profile.id, "photo_medicine"), loadFoods()]);
-  return <IdentifyClient initialRemaining={usage.remaining} limit={usage.limit} foods={foods} />;
+  return <IdentifyClient initialTab={initialTab} initialRemaining={usage.remaining} limit={usage.limit} foods={foods} />;
 }
 
 function IdentifySkeleton() {
@@ -38,12 +40,12 @@ function IdentifySkeleton() {
   );
 }
 
-export default function IdentifyPage() {
+export default function IdentifyPage({ searchParams }: PageProps<"/identificar">) {
   return (
     <main className="flex flex-1 flex-col gap-4">
       <h1 className="text-3xl font-extrabold tracking-tight text-heading">Identificar</h1>
       <Suspense fallback={<IdentifySkeleton />}>
-        <IdentifyData />
+        <IdentifyData searchParams={searchParams} />
       </Suspense>
     </main>
   );

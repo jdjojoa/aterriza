@@ -613,16 +613,19 @@ const TABS: { id: IdentifyKind; label: string }[] = [
 ];
 
 export function IdentifyClient({
+  initialTab = "medicine",
   initialRemaining,
   limit,
   foods,
 }: {
+  /** Tab to open first (/identificar?tipo=comida opens "food"). */
+  initialTab?: IdentifyKind;
   initialRemaining: number;
   limit: number;
   /** Published dishes, or null when they could not be loaded. */
   foods: FoodCard[] | null;
 }) {
-  const [active, setActive] = useState<IdentifyKind>("medicine");
+  const [active, setActive] = useState<IdentifyKind>(initialTab);
   // Medicine and food photos share one daily quota.
   const [remaining, setRemaining] = useState(initialRemaining);
   const quota = { remaining, limit, onRemaining: setRemaining };

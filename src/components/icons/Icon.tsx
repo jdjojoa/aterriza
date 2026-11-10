@@ -29,9 +29,16 @@ export type IconName =
   | "flag"
   | "lightbulb"
   | "pencil"
-  | "trash";
+  | "trash"
+  | "pill";
 
 const PATHS: Record<IconName, ReactNode> = {
+  pill: (
+    <>
+      <path d="M10.5 20.5a5 5 0 0 1-7-7l7-7a5 5 0 0 1 7 7Z" />
+      <path d="m7 10 7 7" />
+    </>
+  ),
   flag: <path d="M5 21V4m0 0h11l-2 4 2 4H5" />,
   lightbulb: <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3Z" />,
   pencil: <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" />,
