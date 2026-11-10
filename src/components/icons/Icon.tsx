@@ -9,6 +9,7 @@ export type IconName =
   | "user"
   | "logout"
   | "chevron-right"
+  | "chevron-down"
   | "map"
   | "list"
   | "close"
@@ -74,6 +75,7 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   "chevron-right": <path d="m9 6 6 6-6 6" />,
+  "chevron-down": <path d="m6 9 6 6 6-6" />,
   map: (
     <>
       <path d="m9 4-6 2.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5Z" />

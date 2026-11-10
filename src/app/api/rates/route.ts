@@ -1,23 +1,24 @@
 import { connection } from "next/server";
-import { getPenCopRate } from "@/lib/exchange-rates";
+import { BASE_CURRENCY } from "@/lib/currency";
+import { getExchangeRates } from "@/lib/exchange-rates";
 
 const ONE_HOUR = 3600;
 
-/** GET /api/rates → today's PEN→COP rate (or the latest stored one). */
+/** GET /api/rates → today's PEN-based rates (or the latest stored ones). */
 export async function GET() {
   // Never prerender at build time: this may write to the database.
   await connection();
 
-  const rate = await getPenCopRate();
-  if (!rate) {
+  const rates = await getExchangeRates();
+  if (!rates) {
     return Response.json(
-      { error: "No hay una tasa de cambio disponible por ahora." },
+      { error: "No hay tasas de cambio disponibles por ahora." },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
 
   return Response.json(
-    { base: "PEN", quote: "COP", ...rate },
+    { base: BASE_CURRENCY, ...rates },
     {
       headers: {
         "Cache-Control": `public, max-age=${ONE_HOUR}, s-maxage=${ONE_HOUR}`,
