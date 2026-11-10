@@ -12,7 +12,6 @@ type MyTipCardProps = {
   id: string;
   category: string | null;
   body: string;
-  status: "pending" | "approved" | "rejected";
   /** Server-rendered header: status badge, category and date. */
   header: ReactNode;
 };
@@ -21,7 +20,7 @@ const actionClasses =
   "inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-heading hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60";
 
 /** One of the author's own tips, with edit and delete (confirmed). */
-export function MyTipCard({ id, category, body, status, header }: MyTipCardProps) {
+export function MyTipCard({ id, category, body, header }: MyTipCardProps) {
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -48,7 +47,6 @@ export function MyTipCard({ id, category, body, status, header }: MyTipCardProps
           id={id}
           category={isTipCategory(category) ? category : null}
           body={body}
-          status={status}
           onCancel={() => setEditing(false)}
           onSaved={(text) => {
             setEditing(false);
@@ -113,14 +111,12 @@ function EditTipForm({
   id,
   category: initialCategory,
   body: initialBody,
-  status,
   onCancel,
   onSaved,
 }: {
   id: string;
   category: TipCategory | null;
   body: string;
-  status: MyTipCardProps["status"];
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
@@ -179,13 +175,6 @@ function EditTipForm({
         </p>
       </div>
 
-      {status !== "pending" && (
-        <p className="rounded-xl bg-warning-soft p-3 text-sm font-bold text-on-warning-soft">
-          {status === "approved"
-            ? "Al guardar, tu aporte deja de estar publicado y vuelve a revisión."
-            : "Al guardar, tu aporte vuelve a revisión."}
-        </p>
-      )}
       {error && (
         <p id={errorId} role="alert" className="font-bold text-on-warning-soft">
           {error}

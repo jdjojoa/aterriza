@@ -151,7 +151,7 @@ export function RoutesExplorer({ routes }: { routes: RouteItem[] }) {
                     <Badge>{TRANSPORT_MODE_LABELS[r.mode]}</Badge>
                     {r.code && <span className="text-sm font-bold text-muted">{r.code}</span>}
                     {r.verified_at === null && (
-                      <Badge variant="warning">Pendiente de verificación</Badge>
+                      <Badge variant="warning">Referencial</Badge>
                     )}
                   </span>
                   <span className="font-bold text-heading">{r.name}</span>

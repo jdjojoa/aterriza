@@ -9,7 +9,12 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin, todayInLima } from "@/lib/admin/auth";
-import { CONTENT_CONFIG, isContentTable, type ContentTable } from "@/lib/admin/content-config";
+import {
+  CONTENT_CONFIG,
+  isContentTable,
+  requiresVerification,
+  type ContentTable,
+} from "@/lib/admin/content-config";
 import {
   ALLOWED_IMAGE_TYPES,
   CONTENT_IMAGES_BUCKET,
@@ -80,7 +85,8 @@ export async function saveContent(
   }
   const config = CONTENT_CONFIG[table];
   const raw = rawValuesFromFormData(config, formData);
-  const intent = formData.get("intent");
+  // Verification only exists for medicines and transport (safety rule).
+  const intent = requiresVerification(table) ? formData.get("intent") : "save";
   const version = prev.version + 1;
   const fail = (message: string, errors: Record<string, string> = {}): ContentFormState => ({
     status: "error",
@@ -184,7 +190,7 @@ export async function markVerifiedToday(
   id: string,
 ): Promise<ActionResult> {
   const admin = await requireAdmin();
-  if (!isContentTable(table) || !idSchema.safeParse(id).success) {
+  if (!isContentTable(table) || !requiresVerification(table) || !idSchema.safeParse(id).success) {
     return { status: "error", message: "Solicitud no válida." };
   }
   const supabase = await createClient();
@@ -312,6 +318,10 @@ export async function moderateReview(
   return { status: "done", message: messages[operation] };
 }
 
+/**
+ * Tip moderation. "approved" keeps or puts the tip back online and resets its
+ * report counter; "rejected" takes it down. Either way its open reports close.
+ */
 export async function moderateTip(
   tipId: string,
   decision: "approved" | "rejected",
@@ -321,16 +331,36 @@ export async function moderateTip(
     return { status: "error", message: "Solicitud no válida." };
   }
   const supabase = await createClient();
+
+  // Tip first: if it fails, the reports stay open and the item stays queued.
   const { data, error } = await supabase
     .from("tips")
-    .update({ status: decision, reviewed_by: admin.id })
+    .update(
+      decision === "approved"
+        ? { status: "approved" as const, report_count: 0, reviewed_by: admin.id }
+        : { status: "rejected" as const, reviewed_by: admin.id },
+    )
     .eq("id", tipId)
-    .eq("status", "pending")
     .select("id");
   if (error || !data?.length) {
     console.error("[admin] tip moderation failed", error?.message);
-    return { status: "error", message: "No pudimos actualizar el aporte (quizá ya fue revisado)." };
+    return { status: "error", message: "No pudimos actualizar el aporte." };
   }
+
+  const { error: reportsError } = await supabase
+    .from("reports")
+    .update({
+      status: decision === "rejected" ? "resolved" : "dismissed",
+      resolved_by: admin.id,
+      resolved_at: new Date().toISOString(),
+    })
+    .eq("tip_id", tipId)
+    .eq("status", "open");
+  if (reportsError) {
+    console.error("[admin] tip reports update failed", reportsError.message);
+    return { status: "error", message: "El aporte cambió, pero no pudimos cerrar sus reportes." };
+  }
+
   refresh();
-  return { status: "done", message: decision === "approved" ? "Aporte aprobado." : "Aporte rechazado." };
+  return { status: "done", message: decision === "approved" ? "Aporte publicado." : "Aporte rechazado." };
 }

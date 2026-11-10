@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { BottomSheet } from "@/components/ui/BottomSheet";
 import { buttonClasses } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
-import { SourceBadge } from "@/components/ui/SourceBadge";
+import { SourceLink } from "@/components/ui/SourceLink";
 import { Icon } from "@/components/icons/Icon";
 import { DynamicMapView, type MapMarker } from "@/components/map/DynamicMapView";
 import { Reviews } from "@/components/reviews/Reviews";
@@ -114,9 +114,6 @@ export function PlacesExplorer({ places }: { places: PlaceItem[] }) {
                   <span className="font-bold text-heading">{p.name}</span>
                   <span className="flex flex-wrap items-center gap-2 text-sm text-muted">
                     <Badge>{placeCategoryLabel(p.category)}</Badge>
-                    {p.verified_at === null && (
-                      <Badge variant="warning">Pendiente de verificación</Badge>
-                    )}
                     {p.address && <span className="truncate">{p.address}</span>}
                   </span>
                 </span>
@@ -144,7 +141,7 @@ function Detail({ label, value }: { label: string; value: string | null }) {
   return (
     <div>
       <dt className="text-sm font-bold text-heading">{label}</dt>
-      <dd className="text-foreground">{value || "Por verificar"}</dd>
+      <dd className="text-foreground">{value || "Sin información"}</dd>
     </div>
   );
 }
@@ -173,11 +170,7 @@ function PlaceDetails({ place }: { place: PlaceItem }) {
         Abrir en Google Maps
         <span className="sr-only"> (se abre en una pestaña nueva)</span>
       </a>
-      <SourceBadge
-        sourceName={place.source_name}
-        sourceUrl={place.source_url}
-        verifiedAt={place.verified_at}
-      />
+      <SourceLink sourceName={place.source_name} sourceUrl={place.source_url} className="-my-2" />
       <Reviews key={place.id} targetType="place" targetId={place.id} />
     </>
   );

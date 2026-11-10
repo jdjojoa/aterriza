@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth";
 import {
-  MAX_PENDING_TIPS,
+  MAX_TIPS_PER_DAY,
   TIP_MAX_LENGTH,
   TIP_MIN_LENGTH,
   isTipCategory,
@@ -44,32 +44,32 @@ export async function createTip(prev: TipFormState, formData: FormData): Promise
   const profile = await getCurrentProfile();
   const supabase = await createClient();
 
+  // Tips go live instantly: limit how many a user publishes per day.
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count, error: countError } = await supabase
     .from("tips")
     .select("id", { count: "exact", head: true })
     .eq("user_id", profile.id)
-    .eq("status", "pending");
+    .gte("created_at", since);
   if (countError) {
     console.error("[aportes] count failed", countError.message);
-    return fail("No pudimos enviar tu aporte. Inténtalo de nuevo.");
+    return fail("No pudimos publicar tu aporte. Inténtalo de nuevo.");
   }
-  if ((count ?? 0) >= MAX_PENDING_TIPS) {
-    return fail(
-      `Tienes ${MAX_PENDING_TIPS} aportes pendientes. Espera a que el equipo los revise antes de enviar más.`,
-    );
+  if ((count ?? 0) >= MAX_TIPS_PER_DAY) {
+    return fail(`Puedes publicar hasta ${MAX_TIPS_PER_DAY} aportes al día. Vuelve a intentarlo mañana.`);
   }
 
-  // RLS forces user_id = auth.uid() and status = 'pending'.
+  // RLS forces user_id = auth.uid(); the DB trigger sets status = 'approved'.
   const { error } = await supabase.from("tips").insert({ category, body, user_id: profile.id });
   if (error) {
     console.error("[aportes] insert failed", error.message);
-    return fail("No pudimos enviar tu aporte. Inténtalo de nuevo.");
+    return fail("No pudimos publicar tu aporte. Inténtalo de nuevo.");
   }
 
   refresh();
   return {
     status: "saved",
-    message: "¡Gracias! Tu aporte quedó pendiente de revisión.",
+    message: "¡Gracias! Tu aporte ya está publicado.",
     savedAt: Date.now(),
   };
 }
@@ -77,8 +77,8 @@ export async function createTip(prev: TipFormState, formData: FormData): Promise
 export type TipActionResult = { status: "done" | "error"; message: string };
 
 /**
- * Author edits their own tip. The database (0008_tips_author_edit.sql) sends
- * it back to 'pending', so an approved tip waits for a new review.
+ * Author edits their own tip. The status does not change: a published tip
+ * stays published (0009_simplify_verification.sql protects moderation fields).
  */
 export async function updateTip(tipId: string, formData: FormData): Promise<TipActionResult> {
   const fail = (message: string): TipActionResult => ({ status: "error", message });
@@ -89,39 +89,10 @@ export async function updateTip(tipId: string, formData: FormData): Promise<TipA
   const profile = await getCurrentProfile();
   const supabase = await createClient();
 
-  const { data: current, error: readError } = await supabase
-    .from("tips")
-    .select("status")
-    .eq("id", tipId)
-    .eq("user_id", profile.id)
-    .maybeSingle();
-  if (readError || !current) {
-    if (readError) console.error("[aportes] read before edit failed", readError.message);
-    return fail("No encontramos ese aporte.");
-  }
-
-  // Editing a reviewed tip adds one to the pending queue: keep the same limit.
-  if (current.status !== "pending") {
-    const { count, error: countError } = await supabase
-      .from("tips")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", profile.id)
-      .eq("status", "pending");
-    if (countError) {
-      console.error("[aportes] count failed", countError.message);
-      return fail("No pudimos guardar los cambios. Inténtalo de nuevo.");
-    }
-    if ((count ?? 0) >= MAX_PENDING_TIPS) {
-      return fail(
-        `Tienes ${MAX_PENDING_TIPS} aportes pendientes. Espera a que el equipo los revise antes de editar este.`,
-      );
-    }
-  }
-
-  // RLS (tips_update_own) limits this to the author's rows; the trigger resets the status.
+  // RLS (tips_update_own) limits this to the author's rows; the trigger keeps the status.
   const { data, error } = await supabase
     .from("tips")
-    .update({ category: parsed.category, body: parsed.body, status: "pending", reviewed_by: null })
+    .update({ category: parsed.category, body: parsed.body })
     .eq("id", tipId)
     .eq("user_id", profile.id)
     .select("id");
@@ -131,13 +102,7 @@ export async function updateTip(tipId: string, formData: FormData): Promise<TipA
   }
 
   refresh();
-  return {
-    status: "done",
-    message:
-      current.status === "pending"
-        ? "Cambios guardados."
-        : "Cambios guardados. Tu aporte volvió a revisión.",
-  };
+  return { status: "done", message: "Cambios guardados." };
 }
 
 /** Author deletes their own tip (RLS: tips_delete_own). */

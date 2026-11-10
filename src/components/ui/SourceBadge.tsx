@@ -5,7 +5,7 @@ export type SourceBadgeVariant = "verificado" | "referencial-ia";
 type SourceBadgeProps = {
   sourceName: string;
   sourceUrl: string;
-  /** ISO date ("2026-11-08") or Date. `null` means not verified yet. */
+  /** ISO date ("2026-11-08") or Date. `null` means not verified yet ("Referencial"). */
   verifiedAt: string | Date | null;
   variant?: SourceBadgeVariant;
   className?: string;
@@ -25,6 +25,11 @@ function formatVerifiedAt(value: string | Date) {
   }).format(date);
 }
 
+/**
+ * Source, verification date and "Verificado" / "Referencial" status.
+ * Only for medicines, transport fares and AI-generated text (safety rule).
+ * Places, foods, slang and customs use <SourceLink>.
+ */
 export function SourceBadge({
   sourceName,
   sourceUrl,
@@ -44,7 +49,7 @@ export function SourceBadge({
         {isAi ? (
           <Badge variant="warning">Referencial · generado con IA</Badge>
         ) : pending ? (
-          <Badge variant="warning">Pendiente de verificación</Badge>
+          <Badge variant="warning">Referencial</Badge>
         ) : (
           <Badge variant="success">Verificado</Badge>
         )}
@@ -63,7 +68,7 @@ export function SourceBadge({
       </p>
       <p className="text-muted">
         {pending ? (
-          "Pendiente de verificación"
+          "Dato referencial: el equipo aún no lo ha verificado."
         ) : (
           <>
             Verificado el{" "}

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SourceBadge } from "@/components/ui/SourceBadge";
+import { SourceLink } from "@/components/ui/SourceLink";
 import { Reviews } from "@/components/reviews/Reviews";
 import { Icon } from "@/components/icons/Icon";
 import {
@@ -177,7 +178,7 @@ function AiResult({ reading, generalUse }: { reading: PackageReading; generalUse
 // Food cards
 // -----------------------------------------------------------------------------
 
-const PENDING_TEXT = "Pendiente de verificar.";
+const PENDING_TEXT = "Sin información.";
 
 /** Body of a dish card: shared by the photo result and the dish list. */
 function FoodDetails({ food, showReviews = true }: { food: FoodCard; showReviews?: boolean }) {
@@ -200,12 +201,7 @@ function FoodDetails({ food, showReviews = true }: { food: FoodCard; showReviews
         <Field label="Dónde probarlo en Piura">{food.whereToTry ?? PENDING_TEXT}</Field>
       </dl>
       <NoticeBox>{note}</NoticeBox>
-      <SourceBadge
-        sourceName={food.sourceName}
-        sourceUrl={food.sourceUrl}
-        verifiedAt={food.verifiedAt}
-        variant="verificado"
-      />
+      <SourceLink sourceName={food.sourceName} sourceUrl={food.sourceUrl} className="-my-2" />
       {showReviews && <Reviews key={food.id} targetType="food" targetId={food.id} />}
     </div>
   );
@@ -242,7 +238,7 @@ function FoodAiResult({
     <Card className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <Badge variant="warning" className="self-start">
-          No está en nuestra lista verificada
+          No está en nuestra lista
         </Badge>
         <h2 className="text-xl font-extrabold text-heading">{capitalize(reading.dishName)}</h2>
       </div>
@@ -550,11 +546,6 @@ function DishItem({ food }: { food: FoodCard }) {
       <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-2xl p-4 hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="font-bold text-heading">{food.name}</span>
-          {food.verifiedAt === null && (
-            <Badge variant="warning" className="self-start">
-              Pendiente de verificación
-            </Badge>
-          )}
         </span>
         <span className="text-muted transition-transform group-open:rotate-90 motion-reduce:transition-none">
           <Icon name="chevron-right" />

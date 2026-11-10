@@ -188,7 +188,7 @@ export function Reviews({ targetType, targetId }: ReviewsProps) {
       )}
 
       <ReportDialog
-        review={reporting}
+        target={reporting && { kind: "review", id: reporting.id, authorName: reporting.author_name }}
         onClose={() => setReporting(null)}
         onReported={(reviewId) =>
           setRows((prev) => prev.map((r) => (r.id === reviewId ? { ...r, reported_by_me: true } : r)))

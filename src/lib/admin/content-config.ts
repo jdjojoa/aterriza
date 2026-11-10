@@ -23,6 +23,17 @@ export function isContentTable(value: unknown): value is ContentTable {
   return typeof value === "string" && (CONTENT_TABLES as readonly string[]).includes(value);
 }
 
+/**
+ * Safety rule: medicines and transport fares require a source and show
+ * "Verificado" / "Referencial". The other tables have an optional source and
+ * no verification step.
+ */
+export const VERIFIED_TABLES = ["medicines", "transport_routes"] as const satisfies readonly ContentTable[];
+
+export function requiresVerification(table: ContentTable) {
+  return (VERIFIED_TABLES as readonly string[]).includes(table);
+}
+
 export type SelectOption = { value: string; label: string };
 
 type BaseField = { name: string; label: string; hint?: string; required?: boolean };

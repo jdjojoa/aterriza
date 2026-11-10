@@ -119,9 +119,11 @@ function orFilter(columns: string[], keywords: string[]) {
 
 type SearchHit = {
   title: string;
-  sourceName: string;
-  sourceUrl: string;
+  sourceName: string | null;
+  sourceUrl: string | null;
   verifiedAt: string | null;
+  /** Transport fares (and medicines) show verification; other content does not. */
+  verifiable: boolean;
   text: string;
   score: number;
 };
@@ -166,6 +168,7 @@ async function searchTransport(supabase: Client, keywords: string[]): Promise<Se
       sourceName: r.source_name,
       sourceUrl: r.source_url,
       verifiedAt: r.verified_at,
+      verifiable: true,
       text,
       score: score(text, keywords) + bonus,
     };
@@ -204,6 +207,7 @@ async function searchPlaces(supabase: Client, keywords: string[]): Promise<Searc
       sourceName: p.source_name,
       sourceUrl: p.source_url,
       verifiedAt: p.verified_at,
+      verifiable: false,
       text,
       score: score(text, keywords) + (categories.includes(p.category) ? 2 : 0),
     };
@@ -249,6 +253,7 @@ async function searchSlang(supabase: Client, keywords: string[]): Promise<Search
       sourceName: t.source_name,
       sourceUrl: t.source_url,
       verifiedAt: t.verified_at,
+      verifiable: false,
       text,
       score: score(text, keywords) + (exact ? 3 : 0),
     };
@@ -295,6 +300,7 @@ async function searchCustoms(supabase: Client, keywords: string[]): Promise<Sear
       sourceName: c.source_name,
       sourceUrl: c.source_url,
       verifiedAt: c.verified_at,
+      verifiable: false,
       text,
       score: score(text, keywords) + bonus,
     };
@@ -349,14 +355,18 @@ export async function buildChatContext(supabase: Client, message: string): Promi
     sourceName: h.sourceName,
     sourceUrl: h.sourceUrl,
     verifiedAt: h.verifiedAt,
+    verifiable: h.verifiable,
   }));
 
   const lines = hits.map((h, i) => {
-    const verified = h.verifiedAt ? `verificado el ${h.verifiedAt}` : "pendiente de verificación";
+    if (!h.verifiable) {
+      return `[F${i + 1}] ${h.text}.${h.sourceName ? ` (Fuente: ${h.sourceName})` : ""}`;
+    }
+    const verified = h.verifiedAt ? `verificado el ${h.verifiedAt}` : "referencial, sin verificar";
     return `[F${i + 1}] ${h.text}. (Fuente: ${h.sourceName}, ${verified})`;
   });
   tips.forEach((t, i) => {
-    lines.push(`[C${i + 1}] Aporte aprobado de la comunidad: ${t.body.replace(/\s+/g, " ")}`);
+    lines.push(`[C${i + 1}] Aporte de la comunidad: ${t.body.replace(/\s+/g, " ")}`);
   });
 
   const block = lines.length
@@ -377,7 +387,7 @@ export function resolveCitations(reply: string, sources: ChatSource[]) {
       const source = sources.find((s) => s.label === label);
       if (!source) return "";
       cited.add(label);
-      return `[${source.title} · ${source.sourceName}]`;
+      return source.sourceName ? `[${source.title} · ${source.sourceName}]` : `[${source.title}]`;
     })
     .replace(/\[C\d+\]/g, "[Aporte de la comunidad]")
     .replace(/ {2,}/g, " ")

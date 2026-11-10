@@ -6,7 +6,7 @@ import { StarDisplay } from "@/components/reviews/Stars";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { requireAdmin } from "@/lib/admin/auth";
-import { REPORT_REASONS } from "@/lib/community";
+import { formatReportReason } from "@/lib/community";
 import { createClient } from "@/lib/supabase/server";
 import type { ReviewTargetType } from "@/types/database";
 
@@ -35,15 +35,6 @@ const dateFormat = new Intl.DateTimeFormat("es-PE", {
   minute: "2-digit",
   timeZone: "America/Lima",
 });
-
-/** "falso: detalle" -> "Falso — detalle" (format written by ReportDialog). */
-function formatReason(reason: string) {
-  const [key, ...rest] = reason.split(":");
-  const label = REPORT_REASONS.find((r) => r.value === key.trim())?.label;
-  if (!label) return reason;
-  const detail = rest.join(":").trim();
-  return detail ? `${label} — ${detail}` : label;
-}
 
 /** Target names and author first names for a set of reviews. */
 async function loadContext(supabase: Supabase, reviews: ReviewSummary[]) {
@@ -97,7 +88,7 @@ function ReviewCard({
             <ul className="flex flex-col gap-1 text-sm">
               {reasons.map((r) => (
                 <li key={r.id}>
-                  {formatReason(r.reason)}{" "}
+                  {formatReportReason(r.reason)}{" "}
                   <time dateTime={r.created_at} className="opacity-90">
                     ({dateFormat.format(new Date(r.created_at))})
                   </time>
@@ -132,6 +123,7 @@ async function ReportQueue() {
     .from("reports")
     .select("id, reason, created_at, review_id, reviews(id, user_id, rating, body, status, report_count, target_type, target_id, created_at)")
     .eq("status", "open")
+    .not("review_id", "is", null) // Tip reports live in /admin/aportes.
     .order("created_at", { ascending: true })
     .limit(300);
 

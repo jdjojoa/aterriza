@@ -9,28 +9,39 @@ import {
   REPORT_REASONS,
   type ReportReason,
 } from "@/lib/community";
-import type { ReviewListRow } from "@/types/database";
 
 const THANKS = "Gracias, el equipo lo revisará.";
 
+/** What is being reported: someone else's review or community tip. */
+export type ReportTarget = { kind: "review" | "tip"; id: string; authorName: string };
+
+const COPY = {
+  review: { title: "Reportar reseña", noun: "Reseña", question: "¿Por qué la reportas?" },
+  tip: { title: "Reportar aporte", noun: "Aporte", question: "¿Por qué lo reportas?" },
+} as const;
+
 type ReportDialogProps = {
-  /** Review being reported; null keeps the dialog closed. */
-  review: ReviewListRow | null;
+  /** Item being reported; null keeps the dialog closed. */
+  target: ReportTarget | null;
   onClose: () => void;
-  onReported: (reviewId: string) => void;
+  onReported: (id: string) => void;
 };
 
-/** Modal to report someone else's review. One report per user and review (DB unique). */
-export function ReportDialog({ review, onClose, onReported }: ReportDialogProps) {
+/**
+ * Modal to report someone else's review or tip. One report per user and item
+ * (DB unique). At 3 reports the item is hidden and waits for the admin.
+ */
+export function ReportDialog({ target, onClose, onReported }: ReportDialogProps) {
   return (
-    <BottomSheet open={review !== null} onClose={onClose} title="Reportar reseña">
-      {/* key: fresh form state for each review. */}
-      {review && <ReportForm key={review.id} review={review} onClose={onClose} onReported={onReported} />}
+    <BottomSheet open={target !== null} onClose={onClose} title={target ? COPY[target.kind].title : ""}>
+      {/* key: fresh form state for each item. */}
+      {target && <ReportForm key={target.id} target={target} onClose={onClose} onReported={onReported} />}
     </BottomSheet>
   );
 }
 
-function ReportForm({ review, onClose, onReported }: { review: ReviewListRow } & Omit<ReportDialogProps, "review">) {
+function ReportForm({ target, onClose, onReported }: { target: ReportTarget } & Omit<ReportDialogProps, "target">) {
+  const copy = COPY[target.kind];
   const name = useId();
   const detailId = useId();
   const [reason, setReason] = useState<ReportReason | null>(null);
@@ -56,17 +67,20 @@ function ReportForm({ review, onClose, onReported }: { review: ReviewListRow } &
     // No .select(): reports are admin-only reads, so RETURNING would fail RLS.
     const { error } = await createClient()
       .from("reports")
-      .insert({ review_id: review.id, reason: extra ? `${reason}: ${extra}` : reason });
+      .insert({
+        ...(target.kind === "review" ? { review_id: target.id } : { tip_id: target.id }),
+        reason: extra ? `${reason}: ${extra}` : reason,
+      });
     setPending(false);
 
-    // 23505 = this user already reported this review: same outcome for them.
+    // 23505 = this user already reported this item: same outcome for them.
     if (error && error.code !== "23505") {
       console.error("[reports] insert failed", error.code, error.message);
       setError("No pudimos enviar el reporte. Inténtalo de nuevo.");
       return;
     }
     setDone(true);
-    onReported(review.id);
+    onReported(target.id);
   }
 
   if (done) {
@@ -85,11 +99,11 @@ function ReportForm({ review, onClose, onReported }: { review: ReviewListRow } &
   return (
     <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-4">
       <p className="text-muted">
-        Reseña de <span className="font-bold text-heading">{review.author_name}</span>. Tu reporte es
+        {copy.noun} de <span className="font-bold text-heading">{target.authorName}</span>. Tu reporte es
         anónimo para el autor.
       </p>
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-sm font-bold text-heading">¿Por qué la reportas?</legend>
+        <legend className="mb-1 text-sm font-bold text-heading">{copy.question}</legend>
         {REPORT_REASONS.map((r) => (
           <label
             key={r.value}

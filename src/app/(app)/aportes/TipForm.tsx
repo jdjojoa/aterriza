@@ -72,7 +72,7 @@ function TipFields({
         </p>
       )}
       <Button type="submit" size="lg" className="w-full" disabled={pending}>
-        {pending ? "Enviando…" : "Enviar aporte"}
+        {pending ? "Publicando…" : "Publicar aporte"}
       </Button>
       <p role="status" className="text-center text-sm font-bold text-heading empty:hidden">
         {state.status === "saved" ? state.message : ""}

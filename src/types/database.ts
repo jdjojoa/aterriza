@@ -39,8 +39,9 @@ export type RoutePath = [number, number][];
 /** Columns shared by every content table. */
 type ContentRow = {
   id: string;
-  source_name: string;
-  source_url: string;
+  /** Required (not null) only on medicines and transport_routes. */
+  source_name: string | null;
+  source_url: string | null;
   verified_at: string | null; // date (YYYY-MM-DD)
   verified_by: string | null;
   is_published: boolean;
@@ -49,14 +50,17 @@ type ContentRow = {
 };
 type ContentInsert = {
   id?: string;
-  source_name: string;
-  source_url: string;
+  source_name?: string | null;
+  source_url?: string | null;
   verified_at?: string | null;
   verified_by?: string | null;
   is_published?: boolean;
   created_at?: string;
   updated_at?: string;
 };
+
+/** Medicines and transport fares keep a required source (safety rule). */
+type RequiredSource = { source_name: string; source_url: string };
 
 type Optional<T> = { [K in keyof T]?: T[K] };
 
@@ -167,7 +171,9 @@ type ReviewRow = {
 type ReportRow = {
   id: string;
   reporter_id: string;
-  review_id: string;
+  /** Exactly one of review_id / tip_id is set. */
+  review_id: string | null;
+  tip_id: string | null;
   reason: string;
   status: ReportStatus;
   resolved_by: string | null;
@@ -181,6 +187,7 @@ type TipRow = {
   category: string | null;
   body: string;
   status: TipStatus;
+  report_count: number;
   reviewed_by: string | null;
   created_at: string;
   updated_at: string;
@@ -205,6 +212,8 @@ export type ApprovedTipRow = {
   author_name: string;
   category: string | null;
   body: string;
+  is_own: boolean;
+  reported_by_me: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -246,11 +255,12 @@ export type Database = {
         Relationships: [];
       };
       medicines: {
-        Row: ContentRow & MedicineFields;
+        Row: ContentRow & RequiredSource & MedicineFields;
         Insert: ContentInsert &
+          RequiredSource &
           Pick<MedicineFields, "brand_name_pe" | "active_ingredient" | "digemid_url"> &
           Optional<MedicineFields>;
-        Update: Optional<ContentRow & MedicineFields>;
+        Update: Optional<ContentRow & RequiredSource & MedicineFields>;
         Relationships: [VerifiedByRelationship<"medicines">];
       };
       foods: {
@@ -268,11 +278,12 @@ export type Database = {
         Relationships: [VerifiedByRelationship<"places">];
       };
       transport_routes: {
-        Row: ContentRow & TransportRouteFields;
+        Row: ContentRow & RequiredSource & TransportRouteFields;
         Insert: ContentInsert &
+          RequiredSource &
           Pick<TransportRouteFields, "name" | "mode"> &
           Optional<TransportRouteFields>;
-        Update: Optional<ContentRow & TransportRouteFields>;
+        Update: Optional<ContentRow & RequiredSource & TransportRouteFields>;
         Relationships: [VerifiedByRelationship<"transport_routes">];
       };
       slang_terms: {
@@ -308,7 +319,7 @@ export type Database = {
       };
       reports: {
         Row: ReportRow;
-        Insert: Pick<ReportRow, "review_id" | "reason"> & Optional<ReportRow>;
+        Insert: Pick<ReportRow, "reason"> & Optional<ReportRow>;
         Update: Optional<ReportRow>;
         Relationships: [
           {
@@ -323,6 +334,13 @@ export type Database = {
             columns: ["review_id"];
             isOneToOne: false;
             referencedRelation: "reviews";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reports_tip_id_fkey";
+            columns: ["tip_id"];
+            isOneToOne: false;
+            referencedRelation: "tips";
             referencedColumns: ["id"];
           },
           {
@@ -409,7 +427,7 @@ export type Database = {
           p_active_ingredients: string[];
           p_limit?: number;
         };
-        Returns: (ContentRow & MedicineFields)[];
+        Returns: (ContentRow & RequiredSource & MedicineFields)[];
         SetofOptions: {
           from: "*";
           to: "medicines";

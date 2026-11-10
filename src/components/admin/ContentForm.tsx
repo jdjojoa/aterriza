@@ -6,7 +6,12 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { SourceBadge } from "@/components/ui/SourceBadge";
-import { CONTENT_CONFIG, type ContentTable, type FieldDef } from "@/lib/admin/content-config";
+import {
+  CONTENT_CONFIG,
+  requiresVerification,
+  type ContentTable,
+  type FieldDef,
+} from "@/lib/admin/content-config";
 import { fieldErrors, parseContent, rawValuesFromFormData, type RawFormValues } from "@/lib/admin/schemas";
 import { ImageUploadField } from "./ImageUploadField";
 import { LocationFields } from "./LocationFields";
@@ -69,6 +74,7 @@ function FormFields({
   isNew: boolean;
 }) {
   const config = CONTENT_CONFIG[table];
+  const verifiable = requiresVerification(table);
   const [clientErrors, setClientErrors] = useState<Record<string, string> | null>(null);
   const errors = clientErrors ?? state.errors;
   const errorCount = Object.keys(errors).length;
@@ -102,36 +108,46 @@ function FormFields({
       {config.map && <LocationFields map={config.map} values={values} errors={errors} />}
 
       <fieldset className="flex flex-col gap-4 rounded-2xl border border-border/30 p-4">
-        <legend className="px-1 text-sm font-bold text-heading">Fuente y verificación</legend>
+        <legend className="px-1 text-sm font-bold text-heading">
+          {verifiable ? "Fuente y verificación" : "Fuente (opcional)"}
+        </legend>
         <Input
-          label="Nombre de la fuente"
+          label={verifiable ? "Nombre de la fuente *" : "Nombre de la fuente"}
           name="source_name"
           defaultValue={values.source_name}
           maxLength={200}
-          required
+          required={verifiable}
           error={errors.source_name}
           placeholder="Ej.: Municipalidad Provincial de Piura"
         />
         <Input
-          label="Enlace de la fuente"
+          label={verifiable ? "Enlace de la fuente *" : "Enlace de la fuente"}
           name="source_url"
           type="url"
           inputMode="url"
           defaultValue={values.source_url}
-          required
+          required={verifiable}
           error={errors.source_url}
-          hint="Obligatorios para guardar y para marcar como verificado."
+          hint={
+            verifiable
+              ? "Obligatorios para guardar y para marcar como verificado."
+              : "Si lo completas, la app muestra un enlace «Fuente»."
+          }
           placeholder="https://"
         />
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          {verifiedAt ? (
-            <Badge variant="success">Verificado el {verifiedAt}</Badge>
-          ) : (
-            <Badge variant="warning">Sin verificar</Badge>
-          )}
-        </div>
-        {!isNew && values.source_name && values.source_url && (
-          <SourceBadge sourceName={values.source_name} sourceUrl={values.source_url} verifiedAt={verifiedAt} />
+        {verifiable && (
+          <>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              {verifiedAt ? (
+                <Badge variant="success">Verificado el {verifiedAt}</Badge>
+              ) : (
+                <Badge variant="warning">Referencial (sin verificar)</Badge>
+              )}
+            </div>
+            {!isNew && values.source_name && values.source_url && (
+              <SourceBadge sourceName={values.source_name} sourceUrl={values.source_url} verifiedAt={verifiedAt} />
+            )}
+          </>
         )}
         <label className="flex min-h-11 items-center gap-3 font-bold text-heading">
           <input
@@ -156,10 +172,12 @@ function FormFields({
         <Button type="submit" name="intent" value="save" size="lg" disabled={pending}>
           {pending ? "Guardando…" : "Guardar"}
         </Button>
-        <Button type="submit" name="intent" value="verify" variant="secondary" disabled={pending}>
-          Guardar y marcar verificado hoy
-        </Button>
-        {verifiedAt && (
+        {verifiable && (
+          <Button type="submit" name="intent" value="verify" variant="secondary" disabled={pending}>
+            Guardar y marcar verificado hoy
+          </Button>
+        )}
+        {verifiable && verifiedAt && (
           <Button type="submit" name="intent" value="unverify" variant="ghost" disabled={pending}>
             Guardar y quitar verificación
           </Button>

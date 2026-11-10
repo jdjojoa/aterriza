@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Icon } from "@/components/icons/Icon";
 import { requireAdmin } from "@/lib/admin/auth";
-import { CONTENT_CONFIG, CONTENT_TABLES } from "@/lib/admin/content-config";
+import { CONTENT_CONFIG, VERIFIED_TABLES } from "@/lib/admin/content-config";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Administración · Aterriza" };
@@ -33,25 +33,35 @@ async function Dashboard() {
   await requireAdmin();
   const supabase = await createClient();
 
-  const [reports, tips, ...unverified] = await Promise.all([
-    supabase.from("reports").select("id", { count: "exact", head: true }).eq("status", "open"),
-    supabase.from("tips").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    ...CONTENT_TABLES.map((table) =>
+  const [reports, tipReports, hiddenTips, ...unverified] = await Promise.all([
+    supabase
+      .from("reports")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "open")
+      .not("review_id", "is", null),
+    supabase.from("reports").select("tip_id").eq("status", "open").not("tip_id", "is", null).limit(1000),
+    supabase.from("tips").select("id").eq("status", "pending").limit(1000),
+    ...VERIFIED_TABLES.map((table) =>
       supabase.from(table as "customs").select("id", { count: "exact", head: true }).is("verified_at", null),
     ),
   ]);
 
+  // Distinct tips in the /admin/aportes queue: reported or hidden.
+  const tipQueue =
+    tipReports.error || hiddenTips.error
+      ? null
+      : new Set([...(tipReports.data ?? []).map((r) => r.tip_id), ...(hiddenTips.data ?? []).map((t) => t.id)]).size;
   const queues: Counter[] = [
-    { href: "/admin/reportes", label: "Reportes abiertos", value: reports.count, urgent: (reports.count ?? 0) > 0 },
-    { href: "/admin/aportes", label: "Aportes pendientes", value: tips.count, urgent: (tips.count ?? 0) > 0 },
+    { href: "/admin/reportes", label: "Reseñas reportadas", value: reports.count, urgent: (reports.count ?? 0) > 0 },
+    { href: "/admin/aportes", label: "Aportes reportados", value: tipQueue, urgent: (tipQueue ?? 0) > 0 },
   ];
-  const tables: Counter[] = CONTENT_TABLES.map((table, i) => ({
+  const tables: Counter[] = VERIFIED_TABLES.map((table, i) => ({
     href: `/admin/contenido/${table}?sin_verificar=1`,
     label: CONTENT_CONFIG[table].label,
     value: unverified[i].count,
     urgent: false,
   }));
-  const failed = [reports, tips, ...unverified].some((r) => r.error);
+  const failed = [reports, tipReports, hiddenTips, ...unverified].some((r) => r.error);
 
   return (
     <>
@@ -72,7 +82,7 @@ async function Dashboard() {
       </section>
       <section aria-labelledby="unverified" className="flex flex-col gap-3">
         <h2 id="unverified" className="text-xl font-extrabold text-heading">
-          Filas sin verificar
+          Medicamentos y rutas sin verificar
         </h2>
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {tables.map((c) => (

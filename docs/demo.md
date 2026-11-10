@@ -11,7 +11,8 @@ vista móvil a 360 px) con la app instalada como PWA.
 
 1. En Supabase → SQL Editor, pega y ejecuta **en orden** las migraciones que falten:
    `0003_search_medicines.sql`, `0004_search_foods.sql`, `0005_search_slang.sql`,
-   `0006_community.sql`, `0007_content_images.sql`, `0008_tips_author_edit.sql`.
+   `0006_community.sql`, `0007_content_images.sql`, `0008_tips_author_edit.sql`,
+   `0009_simplify_verification.sql`.
    > En la revisión del 9 de noviembre **no estaban aplicadas**: sin ellas fallan
    > la identificación de medicamentos y comida, la jerga, las reseñas y los aportes.
 2. Ejecuta `supabase/tests/check_rls.sql` y confirma:
@@ -69,7 +70,7 @@ Tómalas en modo claro y oscuro (sirve también para mostrar los dos temas).
 |---|---|---|---|
 | 0:00–0:30 | **Login** `/` | Tocar «Entrar con Google» con la cuenta principal. | «Aterriza ayuda a estudiantes colombianos que llegan a Piura. Funciona como app instalable y sin costo.» |
 | 0:30–0:50 | **Perfil** `/perfil` | Mostrar nombre y país de origen; en el menú del avatar (arriba a la derecha) cambiar el tema a oscuro. | «El perfil guarda de dónde viene el estudiante; toda la app tiene modo claro y oscuro.» |
-| 0:50–1:20 | **Transporte** `/transporte` | Tocar la ruta EJ-01; enseñar el mapa y la etiqueta de fuente. | «Cada ruta muestra fuente y fecha de verificación. Lo que no está verificado se marca como pendiente.» |
+| 0:50–1:20 | **Transporte** `/transporte` | Tocar la ruta EJ-01; enseñar el mapa y la etiqueta de fuente. | «Cada ruta muestra fuente y fecha de verificación. Lo que no está verificado se marca como referencial.» |
 | 1:20–1:55 | **Lugares** `/lugares` | Abrir Plaza de Armas → bajar a **Reseñas** (se ve la de la cuenta secundaria). | «Los estudiantes dejan reseñas; si alguien reporta una reseña, llega al panel de moderación.» |
 | 1:55–2:35 | **Identificar · medicamento** `/identificar` | Tomar foto a la caja de Paracetamol. | «Lee el empaque y lo cruza con nuestra base. Nunca da dosis: muestra un **equivalente referencial**, un aviso y el enlace a DIGEMID.» |
 | 2:35–2:55 | **Identificar · comida** | Cambiar a Comida y fotografiar el ceviche (o abrirlo en la lista). | «Explica el plato, alérgenos y su parecido en Colombia.» |

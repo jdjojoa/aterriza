@@ -1,10 +1,10 @@
-// End-to-end check of community tips against the real Supabase project (RLS + RPC).
-// Creates 3 temporary confirmed users (author, another student, admin) with the
-// service role key: the author submits a tip, the admin approves it like
-// moderateTip() does, and the other student must then see it both with a plain
-// select (RLS) and through get_approved_tips (what /aportes uses).
-// Then the author edits it (back to pending) and deletes it (0008).
-// Everything is deleted at the end (users cascade to profiles and tips).
+// End-to-end check of community tips against the real Supabase project (RLS + RPC + triggers).
+// Requires supabase/migrations/0009_simplify_verification.sql.
+// Creates 5 temporary confirmed users (author, 3 other students, admin) with the
+// service role key: the author publishes a tip (live at once), the others see
+// it, 3 reports hide it, the admin publishes it again like moderateTip() does,
+// the author edits it (stays published) and deletes it.
+// Everything is deleted at the end (users cascade to profiles, tips and reports).
 // Usage: npm run check:tips
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -58,52 +58,43 @@ async function createUser(fullName) {
 }
 
 const approvedTips = (user) => user.rest("/rpc/get_approved_tips", { method: "POST", body: JSON.stringify({ p_limit: 100 }) });
+const tipFromRpc = async (user, id) => {
+  const rows = await (await approvedTips(user)).json();
+  return Array.isArray(rows) ? (rows.find((r) => r.id === id) ?? null) : null;
+};
+const storedTip = async (id) => (await (await admin(`/rest/v1/tips?id=eq.${id}&select=status,report_count`)).json())[0];
+// Same insert as ReportDialog (no RETURNING: reports are admin-only reads).
+const report = (user, tipId, reason) =>
+  user.rest("/reports", { method: "POST", headers: { prefer: "return=minimal" }, body: JSON.stringify({ tip_id: tipId, reason }) });
 
 try {
   const author = await createUser("Autora Prueba");
-  const other = await createUser("Otro Estudiante");
+  const readers = [await createUser("Lector Uno"), await createUser("Lectora Dos"), await createUser("Lector Tres")];
   const moderator = await createUser("Admin Prueba");
   // service_role may change roles (prevent_role_change trigger allows it).
   const promote = await admin(`/rest/v1/profiles?id=eq.${moderator.id}`, { method: "PATCH", body: JSON.stringify({ role: "admin" }) });
-  check("create 3 temporary users, one admin", promote.ok, `${promote.status}`);
+  check("create 5 temporary users, one admin", promote.ok, `${promote.status}`);
 
+  // Even a crafted insert asking for 'pending' or a report count ends up approved / 0.
   const ins = await author.rest("/tips", {
     method: "POST",
-    body: JSON.stringify({ user_id: author.id, category: "llegada", body: `Aporte de prueba ${randomUUID()}` }),
+    body: JSON.stringify({ user_id: author.id, category: "llegada", body: `Aporte de prueba ${randomUUID()}`, status: "pending", report_count: 7 }),
   });
   const [tip] = await ins.json();
-  check("author submits tip (pending)", ins.ok && tip?.status === "pending", `${ins.status} ${tip?.status}`);
+  check(
+    "author publishes tip (approved at once)",
+    ins.ok && tip?.status === "approved" && tip?.report_count === 0,
+    `${ins.status} ${JSON.stringify(tip)} (0009_simplify_verification.sql applied?)`,
+  );
 
-  const before = await (await other.rest(`/tips?id=eq.${tip.id}&select=id`)).json();
-  check("pending tip invisible to other users", Array.isArray(before) && before.length === 0, JSON.stringify(before));
-
-  const notAdmin = await (await other.rest(`/tips?id=eq.${tip.id}&status=eq.pending`, { method: "PATCH", body: JSON.stringify({ status: "approved" }) })).json();
-  check("non-admin cannot approve", Array.isArray(notAdmin) && notAdmin.length === 0, JSON.stringify(notAdmin));
-
-  // Same update as moderateTip() in src/app/admin/actions.ts.
-  const approve = await moderator.rest(`/tips?id=eq.${tip.id}&status=eq.pending&select=id`, {
-    method: "PATCH",
-    body: JSON.stringify({ status: "approved", reviewed_by: moderator.id }),
-  });
-  const approved = await approve.json();
-  check("admin approves tip (RLS update)", approve.ok && approved.length === 1, `${approve.status} ${JSON.stringify(approved)}`);
-
-  const stored = (await (await admin(`/rest/v1/tips?id=eq.${tip.id}&select=status,reviewed_by`)).json())[0];
-  check("status saved as approved", stored?.status === "approved" && stored?.reviewed_by === moderator.id, JSON.stringify(stored));
-
-  const direct = await (await other.rest(`/tips?id=eq.${tip.id}&select=id,status`)).json();
-  check("approved tip visible to other users (RLS select)", direct[0]?.status === "approved", JSON.stringify(direct));
-
-  for (const [label, user] of [["other user", other], ["author", author]]) {
-    const rpc = await approvedTips(user);
-    if (rpc.status === 404) {
-      check(`get_approved_tips exists for ${label}`, false, "404: apply supabase/migrations/0006_community.sql in the SQL Editor");
-      continue;
-    }
-    const rows = await rpc.json();
-    const row = Array.isArray(rows) ? rows.find((r) => r.id === tip.id) : null;
-    check(`get_approved_tips returns it to ${label}`, rpc.ok && row?.author_name === "Autora", `${rpc.status} ${JSON.stringify(row ?? rows)}`);
-  }
+  const seen = await tipFromRpc(readers[0], tip.id);
+  check(
+    "other users see it via get_approved_tips",
+    seen?.author_name === "Autora" && seen?.is_own === false && seen?.reported_by_me === false,
+    JSON.stringify(seen),
+  );
+  const own = await tipFromRpc(author, tip.id);
+  check("author sees it marked as own", own?.is_own === true, JSON.stringify(own));
 
   const anon = await fetch(`${SB}/rest/v1/rpc/get_approved_tips`, {
     method: "POST",
@@ -112,32 +103,80 @@ try {
   });
   check("get_approved_tips denied to anonymous visitors", !anon.ok, `${anon.status}`);
 
-  // --- Author edit/delete (supabase/migrations/0008_tips_author_edit.sql) ---
+  // --- Reports: 3 hide the tip ---
+  const selfReport = await report(author, tip.id, "spam");
+  check("author cannot report own tip", !selfReport.ok, `${selfReport.status}`);
+
+  const r1 = await report(readers[0], tip.id, "falso");
+  check("reader 1 reports the tip", r1.ok, `${r1.status} ${await r1.text()}`);
+  const dup = await report(readers[0], tip.id, "spam");
+  check("same reader cannot report twice (unique)", !dup.ok, `${dup.status}`);
+  const flagged = await tipFromRpc(readers[0], tip.id);
+  check("reported_by_me true for reader 1", flagged?.reported_by_me === true, JSON.stringify(flagged));
+
+  await report(readers[1], tip.id, "ofensivo");
+  let stored = await storedTip(tip.id);
+  check("2 reports: still published", stored?.status === "approved" && stored?.report_count === 2, JSON.stringify(stored));
+
+  await report(readers[2], tip.id, "otro: prueba");
+  stored = await storedTip(tip.id);
+  check("3 reports: tip hidden (pending)", stored?.status === "pending" && stored?.report_count === 3, JSON.stringify(stored));
+  check("hidden tip gone from get_approved_tips", (await tipFromRpc(readers[1], tip.id)) === null);
+
+  const openReports = await (await moderator.rest(`/reports?tip_id=eq.${tip.id}&status=eq.open&select=id`)).json();
+  check("admin sees the 3 open reports", Array.isArray(openReports) && openReports.length === 3, JSON.stringify(openReports));
+
+  const notAdmin = await (await readers[0].rest(`/tips?id=eq.${tip.id}`, { method: "PATCH", body: JSON.stringify({ status: "approved" }) })).json();
+  check("non-admin cannot re-publish", Array.isArray(notAdmin) && notAdmin.length === 0, JSON.stringify(notAdmin));
+
+  // Same updates as moderateTip(tipId, "approved") in src/app/admin/actions.ts.
+  const approve = await moderator.rest(`/tips?id=eq.${tip.id}&select=id,status,report_count`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "approved", report_count: 0, reviewed_by: moderator.id }),
+  });
+  const approved = await approve.json();
+  check(
+    "admin publishes it again, counter reset",
+    approve.ok && approved[0]?.status === "approved" && approved[0]?.report_count === 0,
+    `${approve.status} ${JSON.stringify(approved)}`,
+  );
+  const close = await moderator.rest(`/reports?tip_id=eq.${tip.id}&status=eq.open&select=id`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "dismissed", resolved_by: moderator.id, resolved_at: new Date().toISOString() }),
+  });
+  const closed = await close.json();
+  check("admin closes the reports", close.ok && closed.length === 3, `${close.status} ${JSON.stringify(closed)}`);
+  check("tip visible again", (await tipFromRpc(readers[1], tip.id)) !== null);
+
+  // --- Author edit/delete ---
   const editedBody = `Aporte editado ${randomUUID()}`;
-  const otherEdit = await (await other.rest(`/tips?id=eq.${tip.id}`, { method: "PATCH", body: JSON.stringify({ body: "hack" }) })).json();
+  const otherEdit = await (await readers[0].rest(`/tips?id=eq.${tip.id}`, { method: "PATCH", body: JSON.stringify({ body: "hack" }) })).json();
   check("other user cannot edit the tip", Array.isArray(otherEdit) && otherEdit.length === 0, JSON.stringify(otherEdit));
 
   // Same update as updateTip() in src/app/(app)/aportes/actions.ts.
-  const edit = await author.rest(`/tips?id=eq.${tip.id}&select=id,body,status,reviewed_by`, {
+  const edit = await author.rest(`/tips?id=eq.${tip.id}&select=id,body,status`, {
     method: "PATCH",
-    body: JSON.stringify({ category: "transporte", body: editedBody, status: "pending", reviewed_by: null }),
+    body: JSON.stringify({ category: "transporte", body: editedBody }),
   });
   const edited = await edit.json();
   check(
-    "author edits approved tip -> back to pending",
-    edit.ok && edited[0]?.body === editedBody && edited[0]?.status === "pending" && edited[0]?.reviewed_by === null,
-    `${edit.status} ${JSON.stringify(edited)} (0008_tips_author_edit.sql applied?)`,
+    "author edits tip, stays published",
+    edit.ok && edited[0]?.body === editedBody && edited[0]?.status === "approved",
+    `${edit.status} ${JSON.stringify(edited)}`,
   );
 
-  // Even a crafted request that asks for 'approved' must end up pending.
-  const sneaky = await author.rest(`/tips?id=eq.${tip.id}&select=status`, { method: "PATCH", body: JSON.stringify({ body: `${editedBody}!`, status: "approved" }) });
+  const sneaky = await author.rest(`/tips?id=eq.${tip.id}&select=status,report_count`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "rejected", report_count: 9 }),
+  });
   const sneakyRows = await sneaky.json();
-  check("author cannot self-approve on edit", !sneaky.ok || sneakyRows[0]?.status === "pending", `${sneaky.status} ${JSON.stringify(sneakyRows)}`);
+  check(
+    "author cannot change status or report count",
+    !sneaky.ok || (sneakyRows[0]?.status === "approved" && sneakyRows[0]?.report_count === 0),
+    `${sneaky.status} ${JSON.stringify(sneakyRows)}`,
+  );
 
-  const hidden = await (await other.rest(`/tips?id=eq.${tip.id}&select=id`)).json();
-  check("edited tip hidden from others until re-approved", Array.isArray(hidden) && hidden.length === 0, JSON.stringify(hidden));
-
-  const otherDel = await (await other.rest(`/tips?id=eq.${tip.id}`, { method: "DELETE" })).json();
+  const otherDel = await (await readers[0].rest(`/tips?id=eq.${tip.id}`, { method: "DELETE" })).json();
   check("other user cannot delete the tip", Array.isArray(otherDel) && otherDel.length === 0, JSON.stringify(otherDel));
 
   // Same delete as deleteTip().

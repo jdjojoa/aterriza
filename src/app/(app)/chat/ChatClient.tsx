@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { SourceBadge } from "@/components/ui/SourceBadge";
+import { SourceLink } from "@/components/ui/SourceLink";
 import { Icon } from "@/components/icons/Icon";
 import {
   CHAT_DISCLAIMER,
@@ -88,7 +89,11 @@ function Bubble({ item }: { item: ChatItem }) {
             {item.sources.map((s) => (
               <div key={s.label} className="flex flex-col gap-1">
                 <p className="font-bold text-heading">{s.title}</p>
-                <SourceBadge sourceName={s.sourceName} sourceUrl={s.sourceUrl} verifiedAt={s.verifiedAt} />
+                {s.verifiable && s.sourceName && s.sourceUrl ? (
+                  <SourceBadge sourceName={s.sourceName} sourceUrl={s.sourceUrl} verifiedAt={s.verifiedAt} />
+                ) : (
+                  <SourceLink sourceName={s.sourceName} sourceUrl={s.sourceUrl} className="-my-2" />
+                )}
               </div>
             ))}
           </div>

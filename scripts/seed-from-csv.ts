@@ -33,6 +33,13 @@ const common: Record<string, Column> = {
   is_published: { kind: "boolean" },
 };
 
+// Safety rule: only transport_routes (and medicines) require a source.
+const commonOptionalSource: Record<string, Column> = {
+  ...common,
+  source_name: { kind: "text" },
+  source_url: { kind: "url" },
+};
+
 const TABLES: { table: TableName; keys: string[]; columns: Record<string, Column> }[] = [
   {
     table: "places",
@@ -52,7 +59,7 @@ const TABLES: { table: TableName; keys: string[]; columns: Record<string, Column
       hours: { kind: "text" },
       price_info: { kind: "text" },
       image_url: { kind: "url" },
-      ...common,
+      ...commonOptionalSource,
     },
   },
   {
@@ -93,7 +100,7 @@ const TABLES: { table: TableName; keys: string[]; columns: Record<string, Column
       where_to_try: { kind: "text" },
       image_url: { kind: "url" },
       keywords: { kind: "list" },
-      ...common,
+      ...commonOptionalSource,
     },
   },
   {
@@ -109,7 +116,7 @@ const TABLES: { table: TableName; keys: string[]; columns: Record<string, Column
         kind: "text",
         oneOf: ["personas", "expresiones", "comida", "transporte", "compras", "estudio", "ropa", "lugares"],
       },
-      ...common,
+      ...commonOptionalSource,
     },
   },
   {
@@ -124,7 +131,7 @@ const TABLES: { table: TableName; keys: string[]; columns: Record<string, Column
         oneOf: ["saludo", "comida", "transporte", "horarios", "propinas", "seguridad"],
       },
       icon: { kind: "text" },
-      ...common,
+      ...commonOptionalSource,
     },
   },
 ];

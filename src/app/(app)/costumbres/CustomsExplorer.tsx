@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
-import { SourceBadge } from "@/components/ui/SourceBadge";
+import { SourceLink } from "@/components/ui/SourceLink";
 import { Icon } from "@/components/icons/Icon";
 import { CUSTOM_CATEGORIES, customCategory, type CustomItem } from "@/lib/customs";
 
@@ -73,11 +73,7 @@ export function CustomsExplorer({ customs }: { customs: CustomItem[] }) {
                     <Card className="flex flex-col gap-3">
                       <h3 className="text-lg font-bold text-heading">{c.title}</h3>
                       <p className="text-foreground">{c.body}</p>
-                      <SourceBadge
-                        sourceName={c.source_name}
-                        sourceUrl={c.source_url}
-                        verifiedAt={c.verified_at}
-                      />
+                      <SourceLink sourceName={c.source_name} sourceUrl={c.source_url} className="-my-2" />
                     </Card>
                   </li>
                 ))}

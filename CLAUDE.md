@@ -20,7 +20,14 @@ PWA en español para estudiantes colombianos que llegan a Piura, Perú. Proyecto
 - Solo `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `NEXT_PUBLIC_SITE_URL` pueden ser públicas.
 
 ## Contenido y fuentes
-- Todo contenido muestra **fuente, enlace y fecha de verificación** usando el componente `SourceBadge`.
+- **Medicamentos y tarifas de transporte** (regla de seguridad, no cambiar): fuente obligatoria y se muestran con `SourceBadge` (fuente, enlace, fecha, "Verificado" o "Referencial"). Solo estas dos tablas tienen verificación en el panel admin.
+- **Lugares, platos, jerga y costumbres**: fuente opcional y sin verificación. Sin `SourceBadge` ni textos tipo "Pendiente de verificación"; si la fila tiene `source_url`, solo un enlace discreto "Fuente" (`SourceLink`).
+- El contenido generado con IA sigue mostrando `SourceBadge` con `variant="referencial-ia"`.
+
+## Aportes y reseñas de la comunidad
+- Los aportes se publican al instante (`status = 'approved'` por defecto) y tienen botón "Reportar", igual que las reseñas.
+- Con 3 reportes, el aporte o la reseña se oculta y llega a la cola del admin (`/admin/aportes`, `/admin/reportes`). Lo hace la base de datos (trigger `handle_new_report`), no el cliente.
+- El autor puede editar o borrar su aporte; editar no cambia su estado.
 
 ## Medicamentos
 - Nunca dar dosis ni diagnósticos.

@@ -8,7 +8,12 @@ import { ActionButton } from "@/components/admin/ActionButton";
 import { Badge } from "@/components/ui/Badge";
 import { buttonClasses } from "@/components/ui/Button";
 import { requireAdmin, todayInLima } from "@/lib/admin/auth";
-import { CONTENT_CONFIG, isContentTable, type ContentTable } from "@/lib/admin/content-config";
+import {
+  CONTENT_CONFIG,
+  isContentTable,
+  requiresVerification,
+  type ContentTable,
+} from "@/lib/admin/content-config";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Contenido · Administración · Aterriza" };
@@ -45,9 +50,11 @@ async function ContentList({
   await requireAdmin();
 
   const config = CONTENT_CONFIG[table];
+  // Verification only exists for medicines and transport (safety rule).
+  const verifiable = requiresVerification(table);
   const search = await searchParams;
   const q = sanitizeQuery(first(search.q));
-  const unverified = first(search.sin_verificar) === "1";
+  const unverified = verifiable && first(search.sin_verificar) === "1";
   const page = Math.max(1, Number.parseInt(first(search.pagina), 10) || 1);
   const columns = ["id", config.titleField, config.subtitleField, "verified_at", "is_published", "updated_at"]
     .filter(Boolean)
@@ -100,6 +107,7 @@ async function ContentList({
             Buscar
           </button>
         </div>
+        {verifiable && (
         <div className="flex flex-wrap gap-2" aria-label="Filtro">
           {[
             { label: "Todos", value: false },
@@ -119,6 +127,7 @@ async function ContentList({
             </Link>
           ))}
         </div>
+        )}
       </Form>
 
       {error ? (
@@ -139,9 +148,11 @@ async function ContentList({
               <tr>
                 <th scope="col" className="p-3 font-bold">Nombre</th>
                 <th scope="col" className="p-3 font-bold">Estado</th>
-                <th scope="col" className="p-3 font-bold">
-                  <span className="sr-only">Acciones</span>
-                </th>
+                {verifiable && (
+                  <th scope="col" className="p-3 font-bold">
+                    <span className="sr-only">Acciones</span>
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -162,25 +173,32 @@ async function ContentList({
                     </td>
                     <td className="p-3">
                       <div className="flex flex-col items-start gap-1">
-                        {verifiedAt ? (
-                          <Badge variant="success">Verificado {verifiedAt}</Badge>
+                        {verifiable &&
+                          (verifiedAt ? (
+                            <Badge variant="success">Verificado {verifiedAt}</Badge>
+                          ) : (
+                            <Badge variant="warning">Referencial</Badge>
+                          ))}
+                        {row.is_published ? (
+                          !verifiable && <Badge variant="success">Publicado</Badge>
                         ) : (
-                          <Badge variant="warning">Sin verificar</Badge>
+                          <Badge variant="warning">Borrador</Badge>
                         )}
-                        {!row.is_published && <Badge variant="warning">Borrador</Badge>}
                       </div>
                     </td>
-                    <td className="w-40 p-3">
-                      {verifiedAt === today ? (
-                        <span className="text-muted">Verificado hoy</span>
-                      ) : (
-                        <ActionButton
-                          action={markVerifiedToday.bind(null, table, id)}
-                          label="Marcar verificado hoy"
-                          pendingLabel="Marcando…"
-                        />
-                      )}
-                    </td>
+                    {verifiable && (
+                      <td className="w-40 p-3">
+                        {verifiedAt === today ? (
+                          <span className="text-muted">Verificado hoy</span>
+                        ) : (
+                          <ActionButton
+                            action={markVerifiedToday.bind(null, table, id)}
+                            label="Marcar verificado hoy"
+                            pendingLabel="Marcando…"
+                          />
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })}

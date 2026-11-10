@@ -12,13 +12,17 @@ export const CHAT_SUGGESTIONS = [
 export const CHAT_DISCLAIMER =
   "Las respuestas se generan con IA de Google y pueden tener errores.";
 
-/** A source the chat answer cites, shown with <SourceBadge>. */
+/**
+ * A source the chat answer cites. Verifiable sources (transport fares) are
+ * shown with <SourceBadge>; the rest only with a "Fuente" link when present.
+ */
 export type ChatSource = {
   label: string; // "F1"
   title: string;
-  sourceName: string;
-  sourceUrl: string;
+  sourceName: string | null;
+  sourceUrl: string | null;
   verifiedAt: string | null;
+  verifiable: boolean;
 };
 
 export type ChatApiSuccess = {

@@ -32,8 +32,8 @@ export type FoodCard = {
   whereToTry: string | null;
   imageUrl: string | null;
   keywords: string[];
-  sourceName: string;
-  sourceUrl: string;
+  sourceName: string | null;
+  sourceUrl: string | null;
   verifiedAt: string | null;
 };
 

@@ -1,14 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Icon } from "@/components/icons/Icon";
+import { ReportDialog, type ReportTarget } from "@/components/reviews/ReportDialog";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { TIP_CATEGORIES, formatShortDate, tipCategoryLabel } from "@/lib/community";
 import type { ApprovedTipRow } from "@/types/database";
 
-/** Approved tips from everyone, filterable by category. */
+/** Published tips from everyone, filterable by category, with "Reportar". */
 export function ApprovedTips({ tips }: { tips: ApprovedTipRow[] }) {
   const [category, setCategory] = useState<string | "all">("all");
+  const [reported, setReported] = useState<Set<string>>(
+    () => new Set(tips.filter((t) => t.reported_by_me).map((t) => t.id)),
+  );
+  const [reporting, setReporting] = useState<ReportTarget | null>(null);
 
   // Only offer chips for categories that have tips.
   const categories = useMemo(
@@ -41,12 +48,37 @@ export function ApprovedTips({ tips }: { tips: ApprovedTipRow[] }) {
             <p className="whitespace-pre-line break-words text-foreground">{t.body}</p>
             <p className="text-sm text-muted">
               Aporte de <span className="font-bold text-heading">{t.author_name}</span> ·{" "}
-              <time dateTime={t.created_at}>{formatShortDate(t.created_at)}</time> · Revisado el{" "}
-              <time dateTime={t.updated_at}>{formatShortDate(t.updated_at)}</time>
+              <time dateTime={t.created_at}>{formatShortDate(t.created_at)}</time>
             </p>
+            {!t.is_own && (
+              <div>
+                {reported.has(t.id) ? (
+                  <span className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted">
+                    <Icon name="flag" size={16} />
+                    Ya lo reportaste
+                  </span>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    className="-ml-2 text-sm"
+                    onClick={() => setReporting({ kind: "tip", id: t.id, authorName: t.author_name })}
+                  >
+                    <Icon name="flag" size={16} />
+                    Reportar
+                    <span className="sr-only"> el aporte de {t.author_name}</span>
+                  </Button>
+                )}
+              </div>
+            )}
           </li>
         ))}
       </ul>
+
+      <ReportDialog
+        target={reporting}
+        onClose={() => setReporting(null)}
+        onReported={(id) => setReported((prev) => new Set(prev).add(id))}
+      />
     </div>
   );
 }

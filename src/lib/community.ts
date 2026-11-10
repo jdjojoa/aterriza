@@ -4,8 +4,8 @@ export const REVIEW_MAX_LENGTH = 500;
 export const TIP_MIN_LENGTH = 10;
 export const TIP_MAX_LENGTH = 500;
 export const REPORT_DETAIL_MAX_LENGTH = 300;
-/** Pending tips a user may have at once (keeps the moderation queue small). */
-export const MAX_PENDING_TIPS = 5;
+/** Tips a user may publish in 24 hours (tips go live instantly, so this limits spam). */
+export const MAX_TIPS_PER_DAY = 5;
 
 export const REPORT_REASONS = [
   { value: "ofensivo", label: "Ofensivo", description: "Insultos, odio o acoso." },
@@ -15,6 +15,18 @@ export const REPORT_REASONS = [
 ] as const;
 
 export type ReportReason = (typeof REPORT_REASONS)[number]["value"];
+
+/** Reports that hide a review or tip until the team checks it (DB trigger). */
+export const REPORTS_TO_HIDE = 3;
+
+/** "falso: detalle" -> "Falso — detalle" (format written by ReportDialog). */
+export function formatReportReason(reason: string) {
+  const [key, ...rest] = reason.split(":");
+  const label = REPORT_REASONS.find((r) => r.value === key.trim())?.label;
+  if (!label) return reason;
+  const detail = rest.join(":").trim();
+  return detail ? `${label} — ${detail}` : label;
+}
 
 export const TIP_CATEGORIES = [
   { value: "llegada", label: "Llegada" },

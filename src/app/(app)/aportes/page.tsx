@@ -12,9 +12,10 @@ import { TipForm } from "./TipForm";
 
 export const metadata: Metadata = { title: "Aportes · Aterriza" };
 
+// 'pending' = hidden after 3 reports, waiting for the team.
 const STATUS_LABELS: Record<TipStatus, string> = {
-  pending: "Pendiente",
-  approved: "Aprobado",
+  pending: "En revisión",
+  approved: "Publicado",
   rejected: "Rechazado",
 };
 
@@ -53,7 +54,6 @@ async function MyTips() {
           id={t.id}
           category={t.category}
           body={t.body}
-          status={t.status}
           header={
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={t.status} />
@@ -86,8 +86,8 @@ async function CommunityTips() {
     return (
       <EmptyState
         icon="lightbulb"
-        title="Aún no hay aportes aprobados"
-        description="¡Comparte el primero! El equipo revisa cada aporte antes de publicarlo."
+        title="Aún no hay aportes"
+        description="¡Comparte el primero! Se publica al instante."
       />
     );
   }
@@ -111,8 +111,8 @@ export default function TipsPage() {
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-extrabold tracking-tight text-heading">Aportes</h1>
         <p className="text-muted">
-          Comparte un consejo o una experiencia para quienes llegan después. El equipo lo revisa
-          antes de publicarlo.
+          Comparte un consejo o una experiencia para quienes llegan después. Se publica al instante;
+          si recibe 3 reportes, se oculta hasta que el equipo lo revise.
         </p>
       </div>
 
@@ -138,8 +138,8 @@ export default function TipsPage() {
             De la comunidad
           </h2>
           <p className="text-sm text-muted">
-            Experiencias personales de otros estudiantes, revisadas por el equipo de Aterriza. No son
-            información oficial: confirma los trámites en la fuente correspondiente.
+            Experiencias personales de otros estudiantes. No son información oficial: confirma los
+            trámites en la fuente correspondiente. Si ves algo ofensivo o falso, repórtalo.
           </p>
         </div>
         <Suspense fallback={<ListSkeleton label="Cargando aportes de la comunidad…" />}>

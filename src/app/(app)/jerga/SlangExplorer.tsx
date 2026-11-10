@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { Input } from "@/components/ui/Input";
-import { SourceBadge } from "@/components/ui/SourceBadge";
+import { SourceLink } from "@/components/ui/SourceLink";
 import { SLANG_CATEGORIES, slangCategoryLabel, type SlangItem } from "@/lib/slang";
 import { foldText } from "@/lib/text";
 
@@ -113,7 +113,7 @@ function SlangCard({ term }: { term: SlangItem }) {
         </div>
         <div>
           <dt className="text-sm font-bold text-heading">En Colombia</dt>
-          <dd className="text-foreground">{term.equivalent_co || "Por verificar"}</dd>
+          <dd className="text-foreground">{term.equivalent_co || "Sin información"}</dd>
         </div>
         {term.example && (
           <div>
@@ -122,11 +122,7 @@ function SlangCard({ term }: { term: SlangItem }) {
           </div>
         )}
       </dl>
-      <SourceBadge
-        sourceName={term.source_name}
-        sourceUrl={term.source_url}
-        verifiedAt={term.verified_at}
-      />
+      <SourceLink sourceName={term.source_name} sourceUrl={term.source_url} className="-my-2" />
     </Card>
   );
 }

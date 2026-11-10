@@ -6,6 +6,7 @@ import { z } from "zod";
 import { isSafeMedicineText } from "@/lib/medicine-safety";
 import {
   formColumns,
+  requiresVerification,
   type ContentConfig,
   type FieldDef,
 } from "./content-config";
@@ -122,10 +123,16 @@ function fieldSchema(field: FieldDef) {
   }
 }
 
-/** Source fields: the DB requires them on every row and they gate verification. */
+/** Source fields for medicines and transport: required, they gate verification. */
 export const sourceSchema = z.object({
   source_name: textSchema(200, true, SOURCE_REQUIRED),
   source_url: urlSchema(true, SOURCE_REQUIRED),
+});
+
+/** Source fields for places, foods, slang and customs: optional. */
+const optionalSourceSchema = z.object({
+  source_name: textSchema(200, false),
+  source_url: urlSchema(false),
 });
 
 /** Schema for one content table. Output keys match the table columns. */
@@ -139,7 +146,11 @@ export function contentSchema(config: ContentConfig) {
   if (config.map?.pathField) shape[config.map.pathField] = pathSchema;
 
   return z
-    .object({ ...shape, ...sourceSchema.shape, is_published: z.boolean() })
+    .object({
+      ...shape,
+      ...(requiresVerification(config.table) ? sourceSchema : optionalSourceSchema).shape,
+      is_published: z.boolean(),
+    })
     .superRefine((values: Record<string, unknown>, ctx) => {
       // A map point needs both coordinates or none.
       for (const point of config.map?.points ?? []) {
