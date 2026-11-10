@@ -28,14 +28,14 @@ export type MapViewProps = {
   className?: string;
 };
 
-const OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-const OSM_ATTRIBUTION =
+export const OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+export const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 const iconCache = new Map<string, L.DivIcon>();
 
 /** Custom SVG pin; colours come from CSS tokens (see globals.css). */
-function pinIcon(tone: MarkerTone, emphasized: boolean) {
+export function pinIcon(tone: MarkerTone, emphasized: boolean) {
   const key = `${tone}-${emphasized}`;
   const cached = iconCache.get(key);
   if (cached) return cached;
