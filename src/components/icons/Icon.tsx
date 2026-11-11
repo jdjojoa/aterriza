@@ -30,7 +30,8 @@ export type IconName =
   | "lightbulb"
   | "pencil"
   | "trash"
-  | "pill";
+  | "pill"
+  | "plus";
 
 const PATHS: Record<IconName, ReactNode> = {
   pill: (
@@ -42,6 +43,7 @@ const PATHS: Record<IconName, ReactNode> = {
   flag: <path d="M5 21V4m0 0h11l-2 4 2 4H5" />,
   lightbulb: <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.9V16h5v-.2c0-.8.4-1.5 1-1.9A6 6 0 0 0 12 3Z" />,
   pencil: <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" />,
+  plus: <path d="M12 5v14M5 12h14" />,
   trash: <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />,
   home: (
     <>

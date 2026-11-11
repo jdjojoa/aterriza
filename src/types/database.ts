@@ -227,9 +227,18 @@ export type AdminUserRow = {
   created_at: string;
 };
 
+type ConversationRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type ChatMessageRow = {
   id: string;
   user_id: string;
+  conversation_id: string;
   role: ChatRole;
   content: string;
   created_at: string;
@@ -382,9 +391,23 @@ export type Database = {
           },
         ];
       };
+      conversations: {
+        Row: ConversationRow;
+        Insert: Optional<ConversationRow>;
+        Update: Optional<ConversationRow>;
+        Relationships: [
+          {
+            foreignKeyName: "conversations_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       chat_messages: {
         Row: ChatMessageRow;
-        Insert: Pick<ChatMessageRow, "role" | "content"> &
+        Insert: Pick<ChatMessageRow, "role" | "content" | "conversation_id"> &
           Optional<ChatMessageRow>;
         Update: Optional<ChatMessageRow>;
         Relationships: [
@@ -393,6 +416,13 @@ export type Database = {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "conversations";
             referencedColumns: ["id"];
           },
         ];
@@ -500,6 +530,7 @@ export type Custom = Tables<"customs">;
 export type Review = Tables<"reviews">;
 export type Report = Tables<"reports">;
 export type Tip = Tables<"tips">;
+export type Conversation = Tables<"conversations">;
 export type ChatMessage = Tables<"chat_messages">;
 export type AiUsage = Tables<"ai_usage">;
 export type ExchangeRate = Tables<"exchange_rates">;

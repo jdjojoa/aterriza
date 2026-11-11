@@ -1,6 +1,7 @@
 import type { Content } from "@google/genai";
 import {
   MAX_MESSAGE_LENGTH,
+  conversationTitle,
   type ChatApiError,
   type ChatApiSuccess,
 } from "@/lib/chat";
@@ -13,6 +14,7 @@ import { getUsage, recordUsage } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 const HISTORY_SIZE = 6;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function fail(status: number, code: ChatApiError["code"], error: string, remaining?: number) {
   return Response.json({ error, code, remaining } satisfies ChatApiError, { status });
@@ -90,10 +92,15 @@ async function handleChat(request: Request) {
 
   // 2. Input
   let message: unknown;
+  let conversationId: unknown;
   try {
-    ({ message } = await request.json());
+    ({ message, conversation_id: conversationId } = await request.json());
   } catch {
     return fail(400, "invalid", "Mensaje no válido.");
+  }
+  // null/absent = new conversation, created once the answer is ready.
+  if (conversationId != null && (typeof conversationId !== "string" || !UUID.test(conversationId))) {
+    return fail(400, "invalid", "Conversación no válida.");
   }
   if (typeof message !== "string" || !message.trim()) {
     return fail(400, "invalid", "Escribe una pregunta.");
@@ -104,7 +111,20 @@ async function handleChat(request: Request) {
     return fail(400, "invalid", `Tu pregunta puede tener hasta ${MAX_MESSAGE_LENGTH} caracteres.`);
   }
 
-  // 3. Daily limit
+  // 3. Conversation (RLS: only the user's own) and daily limit, which counts
+  // every conversation of the user (ai_usage is per user).
+  let conversation: { id: string; title: string } | null = null;
+  if (conversationId) {
+    const { data } = await supabase
+      .from("conversations")
+      .select("id, title")
+      .eq("id", conversationId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!data) return fail(404, "invalid", "Esta conversación ya no existe. Empieza un chat nuevo.");
+    conversation = data;
+  }
+
   const usage = await getUsage(userId, "chat");
   if (usage.remaining <= 0) {
     return fail(
@@ -122,12 +142,14 @@ async function handleChat(request: Request) {
       .select("origin_country, destination_country, destination_city")
       .eq("id", userId)
       .maybeSingle(),
-    supabase
-      .from("chat_messages")
-      .select("role, content")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(HISTORY_SIZE),
+    conversation
+      ? supabase
+          .from("chat_messages")
+          .select("role, content")
+          .eq("conversation_id", conversation.id)
+          .order("created_at", { ascending: false })
+          .limit(HISTORY_SIZE)
+      : Promise.resolve({ data: [] as { role: string; content: string }[] }),
     buildChatContext(supabase, text),
   ]);
 
@@ -182,13 +204,30 @@ async function handleChat(request: Request) {
 
   // 6. Usage + history
   await recordUsage(userId, "chat");
-  const { error: saveError } = await supabase.from("chat_messages").insert([
-    { user_id: userId, role: "user", content: text, created_at: askedAt.toISOString() },
-    { user_id: userId, role: "assistant", content: reply, created_at: new Date().toISOString() },
-  ]);
-  if (saveError) console.error("[api/chat] could not save messages", saveError.message);
+  if (!conversation) {
+    const { data, error } = await supabase
+      .from("conversations")
+      .insert({ user_id: userId, title: conversationTitle(text) })
+      .select("id, title")
+      .single();
+    if (error || !data) {
+      console.error("[api/chat] could not create conversation", error?.message);
+    } else {
+      conversation = data;
+    }
+  }
+  let updatedAt = new Date().toISOString();
+  if (conversation) {
+    const { error: saveError } = await supabase.from("chat_messages").insert([
+      { user_id: userId, conversation_id: conversation.id, role: "user", content: text, created_at: askedAt.toISOString() },
+      { user_id: userId, conversation_id: conversation.id, role: "assistant", content: reply, created_at: updatedAt },
+    ]);
+    if (saveError) console.error("[api/chat] could not save messages", saveError.message);
+    updatedAt = new Date().toISOString();
+  }
 
   return Response.json({
+    conversation: conversation ? { ...conversation, updatedAt } : null,
     reply,
     sources,
     remaining: Math.max(0, usage.remaining - 1),
