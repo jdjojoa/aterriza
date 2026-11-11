@@ -10,7 +10,7 @@ export function Chip({ selected, className = "", type = "button", ...props }: Ch
       aria-pressed={selected}
       className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border-2 px-4 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
         selected
-          ? "border-primary-edge bg-primary text-on-primary"
+          ? "border-primary bg-primary text-on-primary"
           : "border-border/40 bg-surface text-heading hover:bg-hover"
       } ${className}`.trim()}
       {...props}

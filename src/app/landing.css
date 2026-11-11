@@ -6,21 +6,21 @@
  * browsers without it simply show the content.
  */
 :root {
-  --landing-grid: rgb(27 58 102 / 0.07);
-  --landing-river: #a9c2e3;
-  --landing-route: #5e7f22;
-  --landing-label: #4a5a6b;
-  --landing-trail: rgb(27 58 102 / 0.45);
-  --landing-glow: rgb(181 210 117 / 0.55);
+  --landing-grid: rgb(0 16 91 / 0.07);
+  --landing-river: var(--brand-lilac);
+  --landing-route: var(--accent);
+  --landing-label: var(--muted);
+  --landing-trail: rgb(0 16 91 / 0.45);
+  --landing-glow: rgb(96 96 182 / 0.45);
 }
 
 .dark {
-  --landing-grid: rgb(138 166 207 / 0.09);
-  --landing-river: #24477a;
-  --landing-route: #b5d275;
-  --landing-label: #c3d1b0;
-  --landing-trail: rgb(181 210 117 / 0.5);
-  --landing-glow: rgb(181 210 117 / 0.18);
+  --landing-grid: rgb(202 181 224 / 0.09);
+  --landing-river: var(--hover);
+  --landing-route: var(--accent);
+  --landing-label: var(--muted);
+  --landing-trail: rgb(202 181 224 / 0.5);
+  --landing-glow: rgb(202 181 224 / 0.18);
 }
 
 /* ---------------------------------------------------------------- Map */

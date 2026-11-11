@@ -52,7 +52,7 @@ export type MapPointDef = {
   label: string;
   latField: string;
   lngField: string;
-  tone: "green" | "blue";
+  tone: "accent" | "primary";
 };
 
 export type MapConfig = {
@@ -148,7 +148,7 @@ export const CONTENT_CONFIG: Record<ContentTable, ContentConfig> = {
       { kind: "image", name: "image_url", label: "Foto" },
     ],
     map: {
-      points: [{ key: "point", label: "Ubicación", latField: "lat", lngField: "lng", tone: "green" }],
+      points: [{ key: "point", label: "Ubicación", latField: "lat", lngField: "lng", tone: "accent" }],
     },
   },
   transport_routes: {
@@ -177,8 +177,8 @@ export const CONTENT_CONFIG: Record<ContentTable, ContentConfig> = {
     ],
     map: {
       points: [
-        { key: "origin", label: "Origen", latField: "origin_lat", lngField: "origin_lng", tone: "green" },
-        { key: "destination", label: "Destino", latField: "destination_lat", lngField: "destination_lng", tone: "blue" },
+        { key: "origin", label: "Origen", latField: "origin_lat", lngField: "origin_lng", tone: "accent" },
+        { key: "destination", label: "Destino", latField: "destination_lat", lngField: "destination_lng", tone: "primary" },
       ],
       waypointsField: "waypoints",
     },

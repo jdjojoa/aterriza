@@ -39,6 +39,14 @@ PWA en español para estudiantes colombianos que llegan a Piura, Perú. Proyecto
 - Modo claro y oscuro en cada pantalla.
 - Contraste mínimo WCAG AA.
 
+## Colores
+- Paleta de marca: azul marino `#00105B`, azul lavanda `#6060B6`, lila `#CAB5E0`, crema `#FCF8EC`.
+- Todos los colores viven como variables en `src/app/globals.css` (y `landing.css` para la landing). En los componentes solo se usan los tokens (`bg-primary`, `text-heading`, `text-accent`, `fill-brand-lilac`…); **prohibido** escribir hex o clases de color de Tailwind (`green-*`, `blue-*`…) a mano. Excepciones: banderas de `CurrencyFlag`, logo de Google, y los hex de `manifest.ts`/`layout.tsx`/`public/logo.svg`/`src/app/icon.svg`, que no aceptan variables CSS.
+- Modo claro: fondo `#FCF8EC`, superficies blancas, títulos y botón principal `#00105B` con texto `#FCF8EC`, acentos e íconos `#6060B6`, tarjetas destacadas e insignias (`accent-soft`) `#CAB5E0` con texto `#00105B`.
+- Modo oscuro: fondo `#000A3D`, superficies `#00105B`, texto `#FCF8EC`, títulos y acentos `#CAB5E0`, botón principal `#6060B6` con texto blanco.
+- Si cambias un token, actualízalo también en `scripts/check-contrast.mjs` y ejecuta `npm run check:contrast` (debe pasar todo).
+- Tras cambiar el logo o la paleta: `npm run icons` y `npm run qr`.
+
 ## Forma de trabajar
 - Cambios pequeños y verificables.
 - Al final de cada tarea ejecuta `npm run build` y corrige todos los errores antes de darla por terminada.

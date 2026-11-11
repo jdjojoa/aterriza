@@ -119,7 +119,7 @@ async function ContentList({
               aria-current={unverified === f.value ? "page" : undefined}
               className={`inline-flex min-h-11 items-center rounded-full border-2 px-4 text-sm font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                 unverified === f.value
-                  ? "border-primary-edge bg-primary text-on-primary"
+                  ? "border-primary bg-primary text-on-primary"
                   : "border-border/40 bg-surface text-heading hover:bg-hover"
               }`}
             >

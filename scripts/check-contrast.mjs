@@ -1,18 +1,21 @@
 // Verifies WCAG AA contrast for every token pair used in the UI.
-// Text pairs need >= 4.5; UI boundaries (borders, focus rings) need >= 3.
+// Text pairs need >= 4.5; UI boundaries (borders, focus rings, icons) need >= 3.
 // Usage: node scripts/check-contrast.mjs
+// Brand palette: navy #00105B · lavender #6060B6 · lilac #CAB5E0 · cream #FCF8EC.
 const themes = {
   light: {
-    background: "#F5FBE3", surface: "#FFFFFF", foreground: "#1B2A3A", heading: "#1B3A66",
-    muted: "#4A5A6B", border: "#6B7B8C", primary: "#B5D275", primaryHover: "#A3C35C",
-    primaryEdge: "#5E7F22", onPrimary: "#1B3A66", accentSoft: "#E3F0C4", onAccentSoft: "#1B3A66",
-    hover: "#E9F3CF", warningSoft: "#FFF4D6", onWarningSoft: "#7A4A00", link: "#1B3A66", ring: "#1B3A66",
+    background: "#FCF8EC", surface: "#FFFFFF", foreground: "#1A1F4D", heading: "#00105B",
+    muted: "#3F4166", border: "#6E6F92", primary: "#00105B", primaryHover: "#1B2A80",
+    primaryEdge: "#6060B6", onPrimary: "#FCF8EC", accent: "#6060B6", accentSoft: "#CAB5E0",
+    onAccentSoft: "#00105B", hover: "#F0E9F7", warningSoft: "#FFF4D6", onWarningSoft: "#7A4A00",
+    link: "#4F4FA6", ring: "#6060B6",
   },
   dark: {
-    background: "#0E1F38", surface: "#1B3A66", foreground: "#EAF5D3", heading: "#B5D275",
-    muted: "#C3D1B0", border: "#8AA6CF", primary: "#B5D275", primaryHover: "#C6DE8E",
-    primaryEdge: "#B5D275", onPrimary: "#1B3A66", accentSoft: "#2C4A1E", onAccentSoft: "#EAF5D3",
-    hover: "#24477A", warningSoft: "#3A2E10", onWarningSoft: "#FFE3A3", link: "#B5D275", ring: "#B5D275",
+    background: "#000A3D", surface: "#00105B", foreground: "#FCF8EC", heading: "#CAB5E0",
+    muted: "#C4C2E0", border: "#8F92CC", primary: "#6060B6", primaryHover: "#5252A8",
+    primaryEdge: "#CAB5E0", onPrimary: "#FFFFFF", accent: "#CAB5E0", accentSoft: "#2B2F80",
+    onAccentSoft: "#FCF8EC", hover: "#1A2680", warningSoft: "#3A2E10", onWarningSoft: "#FFE3A3",
+    link: "#CAB5E0", ring: "#CAB5E0",
   },
 };
 
@@ -21,17 +24,21 @@ const text = [
   ["heading", "background"], ["heading", "surface"],
   ["muted", "background"], ["muted", "surface"],
   ["onPrimary", "primary"], ["onPrimary", "primaryHover"],
+  ["primary", "onPrimary"], // Inverted buttons inside the /inicio photo card
   ["onAccentSoft", "accentSoft"], ["muted", "accentSoft"],
   ["onWarningSoft", "warningSoft"],
   ["onWarningSoft", "surface"], ["onWarningSoft", "background"], // Input error text
   ["muted", "hover"], // ThemeToggle unselected icon on hover
   ["foreground", "hover"], ["heading", "hover"],
-  ["link", "background"], ["link", "surface"],
+  ["link", "background"], ["link", "surface"], ["link", "hover"],
+  ["accent", "background"], ["accent", "surface"],
 ];
 const ui = [
   ["border", "background"], ["border", "surface"],
   ["primaryEdge", "background"], ["primaryEdge", "surface"],
+  ["primary", "background"], ["primary", "surface"], // Filled buttons
   ["ring", "background"], ["ring", "surface"],
+  ["accent", "hover"], // Icons on hovered rows
 ];
 
 const lum = (hex) => {

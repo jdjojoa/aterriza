@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Icon } from "@/components/icons/Icon";
 import { requireAdmin } from "@/lib/admin/auth";
@@ -30,6 +31,7 @@ function CounterCard({ href, label, value, urgent }: Counter) {
 }
 
 async function Dashboard() {
+  await connection();
   await requireAdmin();
   const supabase = await createClient();
 

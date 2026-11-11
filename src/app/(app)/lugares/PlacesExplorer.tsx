@@ -41,7 +41,7 @@ export function PlacesExplorer({ places }: { places: PlaceItem[] }) {
                 id: p.id,
                 ...point,
                 title: p.name,
-                tone: p.id === selectedId ? "blue" : "green",
+                tone: p.id === selectedId ? "primary" : "accent",
                 emphasized: p.id === selectedId,
               } satisfies MapMarker,
             ]

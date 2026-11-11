@@ -5,7 +5,7 @@ export type BadgeVariant = "success" | "warning" | "primary" | "neutral";
 const variants: Record<BadgeVariant, string> = {
   success: "bg-accent-soft text-on-accent-soft",
   warning: "bg-warning-soft text-on-warning-soft",
-  primary: "border border-primary-edge bg-primary text-on-primary",
+  primary: "border border-primary bg-primary text-on-primary",
   neutral: "border border-border/40 bg-surface text-heading",
 };
 

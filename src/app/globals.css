@@ -7,47 +7,56 @@
  * Aterriza design tokens.
  * Every text/background pair is checked against WCAG AA by
  * `node scripts/check-contrast.mjs` (keep both lists in sync).
+ * Components must use these tokens, never raw hex values.
  */
 :root {
   color-scheme: light;
-  --background: #f5fbe3;
+  /* Brand palette: fixed in both themes (logo, icons, QR). */
+  --brand-navy: #00105b;
+  --brand-lavender: #6060b6;
+  --brand-lilac: #cab5e0;
+  --brand-cream: #fcf8ec;
+
+  --background: #fcf8ec;
   --surface: #ffffff;
-  --foreground: #1b2a3a;
-  --heading: #1b3a66;
-  --muted: #4a5a6b;
-  --border: #6b7b8c;
-  --primary: #b5d275;
-  --primary-hover: #a3c35c;
-  --primary-edge: #5e7f22;
-  --on-primary: #1b3a66;
-  --accent-soft: #e3f0c4;
-  --on-accent-soft: #1b3a66;
-  --hover: #e9f3cf;
+  --foreground: #1a1f4d;
+  --heading: #00105b;
+  --muted: #3f4166;
+  --border: #6e6f92;
+  --primary: #00105b;
+  --primary-hover: #1b2a80;
+  --primary-edge: #6060b6;
+  --on-primary: #fcf8ec;
+  --accent: #6060b6;
+  --accent-soft: #cab5e0;
+  --on-accent-soft: #00105b;
+  --hover: #f0e9f7;
   --warning-soft: #fff4d6;
   --on-warning-soft: #7a4a00;
-  --link: #1b3a66;
-  --ring: #1b3a66;
+  --link: #4f4fa6;
+  --ring: #6060b6;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #0e1f38;
-  --surface: #1b3a66;
-  --foreground: #eaf5d3;
-  --heading: #b5d275;
-  --muted: #c3d1b0;
-  --border: #8aa6cf;
-  --primary: #b5d275;
-  --primary-hover: #c6de8e;
-  --primary-edge: #b5d275;
-  --on-primary: #1b3a66;
-  --accent-soft: #2c4a1e;
-  --on-accent-soft: #eaf5d3;
-  --hover: #24477a;
+  --background: #000a3d;
+  --surface: #00105b;
+  --foreground: #fcf8ec;
+  --heading: #cab5e0;
+  --muted: #c4c2e0;
+  --border: #8f92cc;
+  --primary: #6060b6;
+  --primary-hover: #5252a8;
+  --primary-edge: #cab5e0;
+  --on-primary: #ffffff;
+  --accent: #cab5e0;
+  --accent-soft: #2b2f80;
+  --on-accent-soft: #fcf8ec;
+  --hover: #1a2680;
   --warning-soft: #3a2e10;
   --on-warning-soft: #ffe3a3;
-  --link: #b5d275;
-  --ring: #b5d275;
+  --link: #cab5e0;
+  --ring: #cab5e0;
 }
 
 @theme inline {
@@ -61,6 +70,7 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-edge: var(--primary-edge);
   --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-on-accent-soft: var(--on-accent-soft);
   --color-hover: var(--hover);
@@ -68,6 +78,10 @@
   --color-on-warning-soft: var(--on-warning-soft);
   --color-link: var(--link);
   --color-ring: var(--ring);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-lavender: var(--brand-lavender);
+  --color-brand-lilac: var(--brand-lilac);
+  --color-brand-cream: var(--brand-cream);
   --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
   /* Staggered entrance: use with motion-safe: and an animation-delay. */
   --animate-rise: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -93,10 +107,10 @@ body {
  * Leaflet maps (src/components/map/MapView.tsx)
  * ------------------------------------------------------------------------- */
 :root {
-  --map-green: #5e7f22;
-  --map-blue: #1b3a66;
+  --map-pin-accent: var(--accent);
+  --map-pin-primary: var(--heading);
   --map-pin-dot: #ffffff;
-  --map-route: #1b3a66;
+  --map-route: var(--heading);
   /* Route colour per transport mode (>= 3:1 against the light OSM tiles). */
   --map-mode-combi: #c2410c;
   --map-mode-mototaxi: #a21caf;
@@ -106,10 +120,10 @@ body {
 }
 
 .dark {
-  --map-green: #b5d275;
-  --map-blue: #8aa6cf;
-  --map-pin-dot: #0e1f38;
-  --map-route: #b5d275;
+  --map-pin-accent: var(--accent);
+  --map-pin-primary: var(--foreground);
+  --map-pin-dot: var(--background);
+  --map-route: var(--accent);
   /* Against the inverted (dark) tiles. */
   --map-mode-combi: #fb923c;
   --map-mode-mototaxi: #f0abfc;
@@ -155,12 +169,12 @@ body {
   stroke-width: 2;
 }
 
-.map-pin--green .map-pin__body {
-  fill: var(--map-green);
+.map-pin--accent .map-pin__body {
+  fill: var(--map-pin-accent);
 }
 
-.map-pin--blue .map-pin__body {
-  fill: var(--map-blue);
+.map-pin--primary .map-pin__body {
+  fill: var(--map-pin-primary);
 }
 
 .map-pin__dot {

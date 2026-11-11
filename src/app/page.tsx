@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense, type CSSProperties } from "react";
+import { connection } from "next/server";
 import { AuthErrorNotice } from "@/components/AuthErrorNotice";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { InstallAppButton } from "@/components/InstallAppButton";
@@ -56,6 +57,7 @@ async function hasSession() {
  * Signed-in users who have not finished onboarding are redirected by the proxy.
  */
 async function HeaderAuthAction() {
+  await connection();
   if (await hasSession()) {
     return (
       <Link href="/inicio" className={buttonClasses("primary", "md")}>
@@ -67,6 +69,7 @@ async function HeaderAuthAction() {
 }
 
 async function MainAuthAction({ label }: { label: string }) {
+  await connection();
   if (await hasSession()) {
     return (
       <Link href="/inicio" className={buttonClasses("primary", "lg", "w-full")}>
@@ -163,7 +166,7 @@ function HowItWorks() {
                 className="step-line absolute left-[calc(2rem-1px)] top-[4.75rem] h-[calc(100%-3.5rem)] w-0.5 rounded-full bg-primary-edge/60 md:left-[calc(50%+3rem)] md:top-[calc(2rem-1px)] md:h-0.5 md:w-[calc(100%-4.5rem)]"
               />
             )}
-            <span className="relative flex size-16 shrink-0 items-center justify-center rounded-2xl border-2 border-primary-edge bg-primary text-on-primary shadow-lg">
+            <span className="relative flex size-16 shrink-0 items-center justify-center rounded-2xl border-2 border-primary bg-primary text-on-primary shadow-lg">
               <Icon name={step.icon} size={30} />
               <span className="absolute -right-2 -top-2 flex size-7 items-center justify-center rounded-full bg-heading text-sm font-black text-background">
                 {i + 1}
@@ -271,7 +274,7 @@ function FinalCta() {
   return (
     <section aria-labelledby="cta" className="px-4 pb-16">
       {/* Forced dark tokens: the panel is navy in both themes. */}
-      <div className="dark reveal relative isolate mx-auto flex max-w-4xl flex-col items-center gap-6 overflow-hidden rounded-3xl border border-border/40 bg-[#1B3A66] px-6 py-14 text-center text-foreground shadow-2xl">
+      <div className="dark reveal relative isolate mx-auto flex max-w-4xl flex-col items-center gap-6 overflow-hidden rounded-3xl border border-border/40 bg-surface px-6 py-14 text-center text-foreground shadow-2xl">
         <div aria-hidden="true" className="absolute inset-0 -z-10 opacity-40">
           <RouteMap className="size-full" labels={false} />
         </div>

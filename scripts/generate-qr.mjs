@@ -33,7 +33,7 @@ await QRCode.toFile(fileURLToPath(new URL("public/qr-aterriza.png", root)), url,
   errorCorrectionLevel: "H",
   margin: 2,
   width: 1024,
-  color: { dark: "#1B3A66", light: "#FFFFFF" },
+  color: { dark: "#00105B", light: "#FFFFFF" },
 });
 
 console.log(`QR escrito en public/qr-aterriza.png → ${url}`);
