@@ -15,7 +15,7 @@ async function ProfileSection() {
   return (
     <>
       <Card className="flex items-center gap-3">
-        <Avatar name={profile.full_name} url={profile.avatar_url} size={56} />
+        <Avatar name={profile.full_name} url={profile.avatar_url} size={56} on="surface" />
         <div className="min-w-0">
           <p className="truncate text-lg font-bold text-heading">
             {profile.full_name || "Tu cuenta"}

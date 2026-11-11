@@ -63,7 +63,7 @@ export function ProfileMenu({ name, avatarUrl }: ProfileMenuProps) {
           className="absolute right-0 top-full z-30 mt-2 flex w-64 max-w-[calc(100vw-2rem)] flex-col gap-1 rounded-2xl border border-border/30 bg-surface p-2 shadow-lg"
         >
           <div className="flex items-center gap-3 px-3 py-2">
-            <Avatar name={name} url={avatarUrl} size={40} />
+            <Avatar name={name} url={avatarUrl} size={40} on="surface" />
             <p className="min-w-0 truncate font-bold text-heading">
               {name || "Tu cuenta"}
             </p>

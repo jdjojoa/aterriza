@@ -45,7 +45,7 @@ PWA en español para estudiantes colombianos que llegan a Piura, Perú. Proyecto
 - Modo claro: fondo `#FCF8EC`, superficies blancas, títulos y botón principal `#00105B` con texto `#FCF8EC`, acentos e íconos `#6060B6`, tarjetas destacadas e insignias (`accent-soft`) `#CAB5E0` con texto `#00105B`.
 - Modo oscuro: fondo `#000A3D`, superficies `#00105B`, texto `#FCF8EC`, títulos y acentos `#CAB5E0`, botón principal `#6060B6` con texto blanco.
 - Si cambias un token, actualízalo también en `scripts/check-contrast.mjs` y ejecuta `npm run check:contrast` (debe pasar todo).
-- Tras cambiar el logo o la paleta: `npm run icons` y `npm run qr`.
+- Tras cambiar el logo o la paleta: `npm run icons` (favicon, icon, apple-icon y PWA), `npm run qr`, y sube `ICONS_VERSION` en `src/app/manifest.ts` y `VERSION` en `public/sw.js`.
 
 ## Forma de trabajar
 - Cambios pequeños y verificables.

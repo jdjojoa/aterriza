@@ -14,7 +14,6 @@ export const metadata: Metadata = {
   description: "Guía para estudiantes colombianos que llegan a Piura, Perú",
   applicationName: "Aterriza",
   appleWebApp: { capable: true, title: "Aterriza", statusBarStyle: "default" },
-  icons: { apple: "/icons/icon-192.png" },
 };
 
 export const viewport: Viewport = {
