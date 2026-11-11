@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
+  // Cache Components (and Partial Prefetching) stay off: every page reads the
+  // Supabase session per request, and prerendering those reads broke production
+  // (Date.now() / fetch() rejected during prerender). Nothing here uses "use cache".
   async rewrites() {
     // Browsers request /favicon.ico regardless of <link rel="icon">; avoid a 404.
     return [{ source: "/favicon.ico", destination: "/icons/icon-192.png" }];
@@ -20,7 +21,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  partialPrefetching: true,
   turbopack: {
     rules: {
       "*.css": {
