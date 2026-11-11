@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense, type CSSProperties } from "react";
+import { connection } from "next/server";
 import { AuthErrorNotice } from "@/components/AuthErrorNotice";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { InstallAppButton } from "@/components/InstallAppButton";
@@ -56,6 +57,7 @@ async function hasSession() {
  * Signed-in users who have not finished onboarding are redirected by the proxy.
  */
 async function HeaderAuthAction() {
+  await connection();
   if (await hasSession()) {
     return (
       <Link href="/inicio" className={buttonClasses("primary", "md")}>
@@ -67,6 +69,7 @@ async function HeaderAuthAction() {
 }
 
 async function MainAuthAction({ label }: { label: string }) {
+  await connection();
   if (await hasSession()) {
     return (
       <Link href="/inicio" className={buttonClasses("primary", "lg", "w-full")}>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { BottomNav, TopNav } from "@/components/BottomNav";
 import { Logo } from "@/components/Logo";
@@ -6,6 +7,7 @@ import { ProfileMenu } from "@/components/ProfileMenu";
 import { getCurrentProfile } from "@/lib/auth";
 
 async function CurrentProfileMenu() {
+  await connection();
   const profile = await getCurrentProfile();
   return <ProfileMenu name={profile.full_name} avatarUrl={profile.avatar_url} />;
 }
