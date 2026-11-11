@@ -14,6 +14,7 @@
     "check:roles": "node scripts/check-user-roles.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "seed": "tsx scripts/seed-from-csv.ts",
+    "routes:recalculate": "tsx scripts/recalculate-route-paths.ts",
     "qr": "node scripts/generate-qr.mjs"
   },
   "dependencies": {

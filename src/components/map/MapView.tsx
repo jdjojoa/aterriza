@@ -21,6 +21,12 @@ export type MapViewProps = {
   markers?: MapMarker[];
   /** Polyline drawn on top of the tiles, as [lat, lng] points. */
   line?: [number, number][] | null;
+  /** Extra class for the line, e.g. "map-route--combi" for the mode colour. */
+  lineClassName?: string;
+  /** Dashed line: approximate (straight) geometry. */
+  lineDashed?: boolean;
+  /** Adds the OSRM credit next to OpenStreetMap's. */
+  routing?: boolean;
   /** When set, the map zooms to fit these points (or centres on a single one). */
   focus?: LatLng[] | null;
   onMarkerClick?: (id: string) => void;
@@ -31,6 +37,8 @@ export type MapViewProps = {
 export const OSM_TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 export const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+/** For maps that draw route geometry computed with OSRM. */
+export const ROUTING_ATTRIBUTION = `${OSM_ATTRIBUTION} · Recorridos: <a href="https://project-osrm.org/">OSRM</a>`;
 
 const iconCache = new Map<string, L.DivIcon>();
 
@@ -82,6 +90,9 @@ function FitToFocus({ focus, zoom }: { focus: LatLng[]; zoom: number }) {
 export default function MapView({
   markers = [],
   line = null,
+  lineClassName = "",
+  lineDashed = false,
+  routing = false,
   focus = null,
   onMarkerClick,
   zoom = 13,
@@ -99,11 +110,18 @@ export default function MapView({
       scrollWheelZoom={false}
       className={`aterriza-map isolate h-full w-full ${className}`.trim()}
     >
-      <TileLayer url={OSM_TILES} attribution={OSM_ATTRIBUTION} maxZoom={19} />
+      <TileLayer url={OSM_TILES} attribution={routing ? ROUTING_ATTRIBUTION : OSM_ATTRIBUTION} maxZoom={19} />
       {line && line.length > 1 && (
+        // key: Leaflet applies className only on creation.
         <Polyline
+          key={`${lineClassName}-${lineDashed}`}
           positions={line}
-          pathOptions={{ className: "map-route", weight: 5, opacity: 0.9 }}
+          pathOptions={{
+            className: `map-route ${lineClassName}`.trim(),
+            weight: 5,
+            opacity: 0.9,
+            dashArray: lineDashed ? "8 8" : undefined,
+          }}
         />
       )}
       {markers.map((m) => (

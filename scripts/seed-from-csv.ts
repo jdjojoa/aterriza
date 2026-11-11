@@ -307,6 +307,8 @@ function readTable(spec: (typeof TABLES)[number]): Prepared[] {
         rowErrs.push(`${name}: ${(e as Error).message}`);
       }
     });
+    // CSV paths are hand drawn, not OSRM geometry (see recalculate-route-paths.ts).
+    if (spec.table === "transport_routes") record.path_source = null;
     rowErrs.push(...checkRanges(spec.table, record));
     if (rowErrs.length) {
       errors.push(...rowErrs.map((e) => `línea ${line}: ${e}`));

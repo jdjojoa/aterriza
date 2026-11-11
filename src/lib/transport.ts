@@ -8,9 +8,16 @@ export const TRANSPORT_MODE_LABELS: Record<TransportMode, string> = {
   taxi: "Taxi",
 };
 
+/** Max intermediate points per route (OSRM gets origin + these + destination). */
+export const MAX_WAYPOINTS = 25;
+
+/** Admin notice when OSRM failed and the route was saved as a straight line. */
+export const STRAIGHT_LINE_WARNING =
+  "No pudimos obtener el recorrido por calles (el servidor de rutas OSRM no respondió). Guardamos una línea recta entre los puntos; pulsa «Recalcular recorrido» más tarde.";
+
 /** Columns the Transporte screen needs. */
 export const ROUTE_COLUMNS =
-  "id, code, name, mode, origin_name, origin_lat, origin_lng, destination_name, destination_lat, destination_lng, path, fare_min, fare_max, schedule, tips, source_name, source_url, verified_at" as const;
+  "id, code, name, mode, origin_name, origin_lat, origin_lng, destination_name, destination_lat, destination_lng, path, path_source, fare_min, fare_max, schedule, tips, source_name, source_url, verified_at" as const;
 
 export type RouteItem = Pick<
   TransportRoute,
@@ -25,6 +32,7 @@ export type RouteItem = Pick<
   | "destination_lat"
   | "destination_lng"
   | "path"
+  | "path_source"
   | "fare_min"
   | "fare_max"
   | "schedule"

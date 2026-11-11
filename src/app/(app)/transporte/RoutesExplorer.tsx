@@ -24,8 +24,10 @@ export function RoutesExplorer({ routes }: { routes: RouteItem[] }) {
   const origin = toLatLng(selected.origin_lat, selected.origin_lng);
   const destination = toLatLng(selected.destination_lat, selected.destination_lng);
 
-  // Stored path when there is one; otherwise a straight line origin → destination.
+  // Stored path (street geometry from OSRM when path_source is "osrm");
+  // otherwise a straight line origin → destination.
   const path = parseRoutePath(selected.path);
+  const followsStreets = Boolean(path && selected.path_source === "osrm");
   const line: [number, number][] | null =
     path ??
     (origin && destination
@@ -35,18 +37,22 @@ export function RoutesExplorer({ routes }: { routes: RouteItem[] }) {
         ]
       : null);
 
+  // Start and end markers: the route's own points, or the ends of the line.
+  const start = origin ?? (line ? { lat: line[0][0], lng: line[0][1] } : null);
+  const end = destination ?? (line ? { lat: line[line.length - 1][0], lng: line[line.length - 1][1] } : null);
   const markers: MapMarker[] = [];
-  if (origin) {
-    markers.push({ id: "origin", ...origin, title: `Origen: ${selected.origin_name ?? "sin nombre"}`, tone: "green" });
+  if (start) {
+    markers.push({ id: "origin", ...start, title: `Inicio: ${selected.origin_name ?? "sin nombre"}`, tone: "green" });
   }
-  if (destination) {
+  if (end) {
     markers.push({
       id: "destination",
-      ...destination,
-      title: `Destino: ${selected.destination_name ?? "sin nombre"}`,
+      ...end,
+      title: `Fin: ${selected.destination_name ?? "sin nombre"}`,
       tone: "blue",
     });
   }
+  const modeLabel = TRANSPORT_MODE_LABELS[selected.mode];
 
   // MapView refits only when the coordinates change, not on every render.
   const focus: LatLng[] | null = line ? line.map(([lat, lng]) => ({ lat, lng })) : null;
@@ -55,18 +61,40 @@ export function RoutesExplorer({ routes }: { routes: RouteItem[] }) {
     <>
       <section aria-labelledby="selected-route" className="flex flex-col gap-3">
         <div className="h-64 overflow-hidden rounded-2xl border border-border/30">
-          <DynamicMapView markers={markers} line={line} focus={focus} />
+          <DynamicMapView
+            markers={markers}
+            line={line}
+            lineClassName={`map-route--${selected.mode}`}
+            lineDashed={!followsStreets}
+            routing
+            focus={focus}
+          />
         </div>
         <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted" aria-label="Leyenda del mapa">
           <li className="flex items-center gap-1.5">
             <span aria-hidden="true" className="size-3 rounded-full bg-[var(--map-green)]" />
-            Origen
+            Inicio
           </li>
           <li className="flex items-center gap-1.5">
             <span aria-hidden="true" className="size-3 rounded-full bg-[var(--map-blue)]" />
-            Destino
+            Fin
           </li>
-          {!path && line && <li>Línea recta: recorrido aproximado</li>}
+          {line && (
+            <li className="flex items-center gap-1.5">
+              <span
+                aria-hidden="true"
+                className={`h-1 w-5 rounded-full ${
+                  followsStreets ? "" : "border-t-4 border-dashed bg-transparent"
+                }`}
+                style={
+                  followsStreets
+                    ? { background: `var(--map-mode-${selected.mode})` }
+                    : { borderColor: `var(--map-mode-${selected.mode})` }
+                }
+              />
+              {followsStreets ? `Recorrido en ${modeLabel.toLowerCase()}` : "Recorrido aproximado"}
+            </li>
+          )}
         </ul>
 
         <div className="flex flex-col gap-3 rounded-2xl border border-border/30 bg-surface p-4 shadow-sm">

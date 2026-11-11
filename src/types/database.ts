@@ -36,6 +36,8 @@ export type AiFeature = "chat" | "photo_medicine" | "photo_food";
 /** transport_routes.path: list of [lat, lng] points for Leaflet. */
 export type RoutePath = [number, number][];
 
+export type RoutePathSource = "osrm" | "straight";
+
 /** Columns shared by every content table. */
 type ContentRow = {
   id: string;
@@ -134,6 +136,10 @@ type TransportRouteFields = {
   destination_lat: number | null;
   destination_lng: number | null;
   path: Json | null;
+  /** Intermediate [lat, lng] points, origin → waypoints → destination. */
+  waypoints: Json;
+  /** How `path` was built: OSRM street geometry or straight fallback; null = legacy. */
+  path_source: RoutePathSource | null;
   fare_min: number | null;
   fare_max: number | null;
   schedule: string | null;

@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import { isSafeMedicineText } from "@/lib/medicine-safety";
+import { MAX_WAYPOINTS } from "@/lib/transport";
 import {
   formColumns,
   requiresVerification,
@@ -90,18 +91,18 @@ function parseJson(value: string): unknown {
   }
 }
 
-const pathSchema = z
+const waypointsSchema = z
   .string()
   .transform(parseJson)
   .pipe(
     z
       .array(
         z.tuple([z.number().min(-90).max(90), z.number().min(-180).max(180)]),
-        { error: "Trazo no válido." },
+        { error: "Puntos intermedios no válidos." },
       )
-      .max(500, "El trazo admite como máximo 500 puntos.")
+      .max(MAX_WAYPOINTS, `Usa como máximo ${MAX_WAYPOINTS} puntos intermedios.`)
       .nullable()
-      .transform((points) => (points && points.length >= 2 ? points : null)),
+      .transform((points) => points ?? []),
   );
 
 function fieldSchema(field: FieldDef) {
@@ -143,7 +144,7 @@ export function contentSchema(config: ContentConfig) {
     shape[point.latField] = latSchema;
     shape[point.lngField] = lngSchema;
   }
-  if (config.map?.pathField) shape[config.map.pathField] = pathSchema;
+  if (config.map?.waypointsField) shape[config.map.waypointsField] = waypointsSchema;
 
   return z
     .object({
@@ -218,7 +219,7 @@ export function rawValuesFromRow(
   for (const column of [...formColumns(config), "source_name", "source_url"]) {
     const value = row?.[column];
     if (value === null || value === undefined) values[column] = config.defaults?.[column] ?? "";
-    else if (column === config.map?.pathField) values[column] = JSON.stringify(value);
+    else if (column === config.map?.waypointsField) values[column] = JSON.stringify(value);
     else if (Array.isArray(value)) values[column] = value.join(", ");
     else values[column] = String(value);
   }

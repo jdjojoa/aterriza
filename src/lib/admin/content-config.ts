@@ -57,8 +57,11 @@ export type MapPointDef = {
 
 export type MapConfig = {
   points: MapPointDef[];
-  /** Name of a jsonb column holding [[lat, lng], ...] drawn by tapping. */
-  pathField?: string;
+  /**
+   * jsonb column with intermediate [[lat, lng], ...] points added by tapping.
+   * The server turns origin → waypoints → destination into street geometry.
+   */
+  waypointsField?: string;
 };
 
 export type ContentConfig = {
@@ -177,7 +180,7 @@ export const CONTENT_CONFIG: Record<ContentTable, ContentConfig> = {
         { key: "origin", label: "Origen", latField: "origin_lat", lngField: "origin_lng", tone: "green" },
         { key: "destination", label: "Destino", latField: "destination_lat", lngField: "destination_lng", tone: "blue" },
       ],
-      pathField: "path",
+      waypointsField: "waypoints",
     },
   },
   slang_terms: {
@@ -224,6 +227,6 @@ export const COMMON_COLUMNS = [
 export function formColumns(config: ContentConfig) {
   const columns: string[] = config.fields.map((f) => f.name);
   for (const point of config.map?.points ?? []) columns.push(point.latField, point.lngField);
-  if (config.map?.pathField) columns.push(config.map.pathField);
+  if (config.map?.waypointsField) columns.push(config.map.waypointsField);
   return columns;
 }

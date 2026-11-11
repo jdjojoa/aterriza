@@ -29,7 +29,9 @@ import {
   sourceSchema,
   type RawFormValues,
 } from "@/lib/admin/schemas";
+import { computeRouteGeometry, routeControlPoints } from "@/lib/osrm";
 import { createClient } from "@/lib/supabase/server";
+import { STRAIGHT_LINE_WARNING } from "@/lib/transport";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -40,6 +42,8 @@ export type ContentFormState = {
   status: "idle" | "saved" | "error";
   message: string | null;
   errors: Record<string, string>;
+  /** Non-blocking notice after a save (e.g. OSRM failed, straight line stored). */
+  warning?: string | null;
   /** Submitted values, used to refill the form after an error. */
   values: RawFormValues | null;
   /** Bumped on every submit so the form remounts with `values`. */
@@ -60,6 +64,45 @@ function dbErrorMessage(error: { code?: string; message: string }) {
   if (error.code === "42501") return "No tienes permiso para hacer esto.";
   if (error.code === "23514") return "Los datos no cumplen las reglas de la base de datos. Revisa enlaces, rangos y palabras prohibidas.";
   return "No pudimos guardar los cambios. Inténtalo de nuevo.";
+}
+
+/**
+ * Transport routes: sets `path` and `path_source` from origin → waypoints →
+ * destination. Asks OSRM only when the points changed, the stored path is not
+ * street geometry yet, or the admin pressed "Recalcular recorrido".
+ * Returns a warning when OSRM failed and a straight line was stored.
+ */
+async function applyRouteGeometry(
+  supabase: Supabase,
+  id: string | null,
+  values: Record<string, unknown>,
+  force: boolean,
+): Promise<string | null> {
+  const points = routeControlPoints(values as Parameters<typeof routeControlPoints>[0]);
+  if (!points) {
+    values.path = null;
+    values.path_source = null;
+    return null;
+  }
+
+  if (id !== null && !force) {
+    const { data: stored } = await supabase
+      .from("transport_routes")
+      .select("origin_lat, origin_lng, destination_lat, destination_lng, waypoints, path_source")
+      .eq("id", id)
+      .maybeSingle();
+    const storedPoints = stored ? routeControlPoints(stored) : null;
+    if (stored?.path_source === "osrm" && JSON.stringify(storedPoints) === JSON.stringify(points)) {
+      return null; // Same points, street geometry already stored: keep it.
+    }
+  }
+
+  const geometry = await computeRouteGeometry(points);
+  values.path = geometry.path;
+  values.path_source = geometry.source;
+  if (geometry.source === "osrm") return null;
+  console.error("[admin] OSRM failed, storing straight line", geometry.error);
+  return STRAIGHT_LINE_WARNING;
 }
 
 async function removeStoredImage(supabase: Supabase, url: string | null | undefined) {
@@ -119,6 +162,10 @@ export async function saveContent(
 
   const supabase = await createClient();
   const hasImage = config.fields.some((f) => f.kind === "image");
+  const warning =
+    table === "transport_routes"
+      ? await applyRouteGeometry(supabase, id, values, intent === "recalculate")
+      : null;
 
   if (id === null) {
     const { data, error } = await contentFrom(supabase, table)
@@ -129,7 +176,7 @@ export async function saveContent(
       console.error("[admin] insert failed", table, error?.message);
       return fail(error ? dbErrorMessage(error) : "No pudimos guardar los cambios.");
     }
-    redirect(`/admin/contenido/${table}/${data.id}?creado=1`);
+    redirect(`/admin/contenido/${table}/${data.id}?creado=1${warning ? "&recorrido=recta" : ""}`);
   }
 
   let previousImage: string | null = null;
@@ -157,8 +204,12 @@ export async function saveContent(
       ? "Guardado y marcado como verificado hoy."
       : intent === "unverify"
         ? "Guardado. Se quitó la verificación."
-        : "Cambios guardados.";
-  return { status: "saved", message, errors: {}, values: null, version };
+        : intent === "recalculate"
+          ? warning
+            ? "Cambios guardados."
+            : "Cambios guardados. Recorrido recalculado por las calles."
+          : "Cambios guardados.";
+  return { status: "saved", message, warning, errors: {}, values: null, version };
 }
 
 export async function deleteContent(table: string, id: string): Promise<ActionResult> {

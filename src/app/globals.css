@@ -97,6 +97,12 @@ body {
   --map-blue: #1b3a66;
   --map-pin-dot: #ffffff;
   --map-route: #1b3a66;
+  /* Route colour per transport mode (>= 3:1 against the light OSM tiles). */
+  --map-mode-combi: #c2410c;
+  --map-mode-mototaxi: #a21caf;
+  --map-mode-bus: #b91c1c;
+  --map-mode-colectivo: #0f766e;
+  --map-mode-taxi: #854d0e;
 }
 
 .dark {
@@ -104,6 +110,12 @@ body {
   --map-blue: #8aa6cf;
   --map-pin-dot: #0e1f38;
   --map-route: #b5d275;
+  /* Against the inverted (dark) tiles. */
+  --map-mode-combi: #fb923c;
+  --map-mode-mototaxi: #f0abfc;
+  --map-mode-bus: #fca5a5;
+  --map-mode-colectivo: #5eead4;
+  --map-mode-taxi: #fde047;
 }
 
 .aterriza-map {
@@ -164,4 +176,24 @@ body {
 /* Leaflet sets `stroke` as an attribute; CSS wins over presentation attributes. */
 .map-route {
   stroke: var(--map-route);
+}
+
+.map-route--combi { stroke: var(--map-mode-combi); }
+.map-route--mototaxi { stroke: var(--map-mode-mototaxi); }
+.map-route--bus { stroke: var(--map-mode-bus); }
+.map-route--colectivo { stroke: var(--map-mode-colectivo); }
+.map-route--taxi { stroke: var(--map-mode-taxi); }
+
+/* Numbered intermediate points in the admin route picker. */
+.map-waypoint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid var(--map-pin-dot);
+  background: var(--map-route);
+  color: var(--map-pin-dot);
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
 }

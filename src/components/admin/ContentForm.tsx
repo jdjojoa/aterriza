@@ -14,7 +14,7 @@ import {
 } from "@/lib/admin/content-config";
 import { fieldErrors, parseContent, rawValuesFromFormData, type RawFormValues } from "@/lib/admin/schemas";
 import { ImageUploadField } from "./ImageUploadField";
-import { LocationFields } from "./LocationFields";
+import { LocationFields, type RoutePreview } from "./LocationFields";
 
 type ContentFormProps = {
   table: ContentTable;
@@ -23,15 +23,28 @@ type ContentFormProps = {
   verifiedAt: string | null;
   /** Shown once after creating a row (?creado=1). */
   created?: boolean;
+  /** Warning carried over the post-create redirect (OSRM failed). */
+  createdWarning?: string | null;
+  /** Stored route geometry (transport routes only). */
+  routePreview?: RoutePreview | null;
 };
 
 const controlClasses =
   "rounded-xl border border-border bg-surface px-3 text-base text-foreground placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
-export function ContentForm({ table, id, initialValues, verifiedAt, created }: ContentFormProps) {
+export function ContentForm({
+  table,
+  id,
+  initialValues,
+  verifiedAt,
+  created,
+  createdWarning = null,
+  routePreview = null,
+}: ContentFormProps) {
   const initial: ContentFormState = {
     status: "idle",
     message: created ? "Creado. Ya puedes seguir editándolo." : null,
+    warning: createdWarning,
     errors: {},
     values: null,
     version: 0,
@@ -50,6 +63,7 @@ export function ContentForm({ table, id, initialValues, verifiedAt, created }: C
         pending={pending}
         verifiedAt={verifiedAt}
         isNew={id === null}
+        routePreview={routePreview}
       />
       {id && <DeleteButton table={table} id={id} />}
     </div>
@@ -64,6 +78,7 @@ function FormFields({
   pending,
   verifiedAt,
   isNew,
+  routePreview,
 }: {
   table: ContentTable;
   state: ContentFormState;
@@ -72,6 +87,7 @@ function FormFields({
   pending: boolean;
   verifiedAt: string | null;
   isNew: boolean;
+  routePreview: RoutePreview | null;
 }) {
   const config = CONTENT_CONFIG[table];
   const verifiable = requiresVerification(table);
@@ -105,7 +121,15 @@ function FormFields({
         <Field key={field.name} field={field} table={table} value={values[field.name] ?? ""} error={errors[field.name]} />
       ))}
 
-      {config.map && <LocationFields map={config.map} values={values} errors={errors} />}
+      {config.map && (
+        <LocationFields
+          map={config.map}
+          values={values}
+          errors={errors}
+          routePreview={routePreview}
+          canRecalculate={!isNew}
+        />
+      )}
 
       <fieldset className="flex flex-col gap-4 rounded-2xl border border-border/30 p-4">
         <legend className="px-1 text-sm font-bold text-heading">
@@ -167,6 +191,11 @@ function FormFields({
         {message ?? ""}
         {isError && errorCount > 0 && ` (${errorCount} ${errorCount === 1 ? "campo" : "campos"})`}
       </p>
+      {!clientErrors && state.warning && (
+        <p role="alert" className="rounded-xl bg-warning-soft p-3 text-sm font-bold text-on-warning-soft">
+          {state.warning}
+        </p>
+      )}
 
       <div className="flex flex-col gap-2">
         <Button type="submit" name="intent" value="save" size="lg" disabled={pending}>

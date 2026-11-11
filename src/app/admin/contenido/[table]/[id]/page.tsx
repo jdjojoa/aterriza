@@ -4,10 +4,13 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
 import { ContentForm } from "@/components/admin/ContentForm";
+import type { RoutePreview } from "@/components/admin/LocationFields";
 import { requireAdmin } from "@/lib/admin/auth";
 import { CONTENT_CONFIG, formColumns, isContentTable } from "@/lib/admin/content-config";
 import { rawValuesFromRow } from "@/lib/admin/schemas";
 import { createClient } from "@/lib/supabase/server";
+import { STRAIGHT_LINE_WARNING, parseRoutePath } from "@/lib/transport";
+import type { Json, RoutePathSource } from "@/types/database";
 
 export const metadata: Metadata = { title: "Editar · Administración · Aterriza" };
 
@@ -30,6 +33,7 @@ async function Editor({
   if (id !== NEW) {
     const supabase = await createClient();
     const columns = ["id", ...formColumns(config), "source_name", "source_url", "verified_at", "is_published"];
+    if (config.map?.waypointsField) columns.push("path", "path_source");
     const { data, error } = await supabase
       .from(table as "customs")
       .select(columns.join(", "))
@@ -45,7 +49,14 @@ async function Editor({
     if (!data) notFound();
     row = data as unknown as Record<string, unknown>;
   }
-  const created = (await searchParams).creado === "1";
+  const query = await searchParams;
+  const created = query.creado === "1";
+  const routePreview: RoutePreview | null = config.map?.waypointsField
+    ? {
+        path: parseRoutePath((row?.path as Json | undefined) ?? null) ?? [],
+        source: (row?.path_source as RoutePathSource | null | undefined) ?? null,
+      }
+    : null;
   const title = row ? String(row[config.titleField] ?? "") : "";
 
   return (
@@ -69,6 +80,8 @@ async function Editor({
         initialValues={rawValuesFromRow(config, row)}
         verifiedAt={(row?.verified_at as string | null) ?? null}
         created={created}
+        createdWarning={created && query.recorrido === "recta" ? STRAIGHT_LINE_WARNING : null}
+        routePreview={routePreview}
       />
     </>
   );
