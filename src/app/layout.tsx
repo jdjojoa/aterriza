@@ -34,7 +34,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="flex min-h-full flex-col font-sans">
+      {/* Browser extensions (e.g. ColorZilla's cz-shortcut-listen) add attributes to <body>. */}
+      <body className="flex min-h-full flex-col font-sans" suppressHydrationWarning>
         {children}
         <ServiceWorkerRegister />
       </body>

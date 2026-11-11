@@ -1,16 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
 import { cookies } from "next/headers";
-import { connection } from "next/server";
 
 /**
  * Supabase client for Server Components, Server Actions and Route Handlers.
  * Create a new one per request; never share it across requests.
  */
 export async function createClient() {
-  // Session reads are per request (supabase-js calls Date.now() to check token
-  // expiry), so keep every caller out of prerendering.
-  await connection();
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
