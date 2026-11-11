@@ -9,7 +9,7 @@ import { getCurrentProfile } from "@/lib/auth";
 async function CurrentProfileMenu() {
   await connection();
   const profile = await getCurrentProfile();
-  return <ProfileMenu name={profile.full_name} avatarUrl={profile.avatar_url} />;
+  return <ProfileMenu name={profile.full_name} avatarUrl={profile.avatar_url} isAdmin={profile.role === "admin"} />;
 }
 
 export default function AppLayout({ children }: LayoutProps<"/">) {

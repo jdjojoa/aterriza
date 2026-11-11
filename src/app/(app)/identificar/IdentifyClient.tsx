@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useId, useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button, buttonClasses } from "@/components/ui/Button";
@@ -607,10 +608,15 @@ function FoodPanel({ remaining, limit, onRemaining, foods }: QuotaProps & { food
 // Tabs
 // -----------------------------------------------------------------------------
 
-const TABS: { id: IdentifyKind; label: string }[] = [
-  { id: "medicine", label: "Medicamento" },
-  { id: "food", label: "Comida" },
+const TABS: { id: IdentifyKind; label: string; param: string }[] = [
+  { id: "medicine", label: "Medicamento", param: "medicamento" },
+  { id: "food", label: "Comida", param: "comida" },
 ];
+
+/** ?tipo=medicamento | comida → tab, or null when absent/unknown. */
+function tabFromParam(tipo: string | null): IdentifyKind | null {
+  return TABS.find((t) => t.param === tipo)?.id ?? null;
+}
 
 export function IdentifyClient({
   initialTab = "medicine",
@@ -618,14 +624,30 @@ export function IdentifyClient({
   limit,
   foods,
 }: {
-  /** Tab to open first (/identificar?tipo=comida opens "food"). */
+  /** Tab to open first when the URL has no valid ?tipo= (server-read fallback). */
   initialTab?: IdentifyKind;
   initialRemaining: number;
   limit: number;
   /** Published dishes, or null when they could not be loaded. */
   foods: FoodCard[] | null;
 }) {
-  const [active, setActive] = useState<IdentifyKind>(initialTab);
+  // The URL (?tipo=medicamento|comida) picks the tab on load and whenever it
+  // changes while the page is open (e.g. a link from /inicio).
+  const urlTab = tabFromParam(useSearchParams().get("tipo"));
+  const [active, setActive] = useState<IdentifyKind>(urlTab ?? initialTab);
+  const [syncedUrlTab, setSyncedUrlTab] = useState(urlTab);
+  if (urlTab !== syncedUrlTab) {
+    setSyncedUrlTab(urlTab);
+    if (urlTab) setActive(urlTab);
+  }
+
+  /** Manual tab change: also update the URL, without a server round trip. */
+  function select(tab: IdentifyKind) {
+    setActive(tab);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tipo", TABS.find((t) => t.id === tab)!.param);
+    window.history.replaceState(null, "", url);
+  }
   // Medicine and food photos share one daily quota.
   const [remaining, setRemaining] = useState(initialRemaining);
   const quota = { remaining, limit, onRemaining: setRemaining };
@@ -641,7 +663,7 @@ export function IdentifyClient({
         : event.key === "End"
           ? TABS.length - 1
           : (index + (event.key === "ArrowRight" ? 1 : -1) + TABS.length) % TABS.length;
-    setActive(TABS[next].id);
+    select(TABS[next].id);
     tabRefs.current[TABS[next].id]?.focus();
   }
 
@@ -667,7 +689,7 @@ export function IdentifyClient({
               aria-selected={selected}
               aria-controls={`panel-${tab.id}`}
               tabIndex={selected ? 0 : -1}
-              onClick={() => setActive(tab.id)}
+              onClick={() => select(tab.id)}
               className={`min-h-11 rounded-lg px-3 font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                 selected ? "bg-primary text-on-primary" : "text-heading hover:bg-hover"
               }`}

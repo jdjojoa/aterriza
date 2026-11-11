@@ -11,12 +11,14 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 type ProfileMenuProps = {
   name: string | null;
   avatarUrl: string | null;
+  /** Shows the "Panel de administrador" link. UX only: /admin checks the role on the server. */
+  isAdmin?: boolean;
 };
 
 const itemClasses =
   "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left font-bold text-heading hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
-export function ProfileMenu({ name, avatarUrl }: ProfileMenuProps) {
+export function ProfileMenu({ name, avatarUrl, isAdmin = false }: ProfileMenuProps) {
   const [open, setOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -76,6 +78,14 @@ export function ProfileMenu({ name, avatarUrl }: ProfileMenuProps) {
             <Icon name="user" size={20} />
             Mi perfil
           </Link>
+          {isAdmin && (
+            <Link href="/admin" className={itemClasses} onClick={() => setOpen(false)}>
+              <span className="text-accent">
+                <Icon name="shield" size={20} />
+              </span>
+              Panel de administrador
+            </Link>
+          )}
           <div className="flex items-center justify-between gap-2 px-3 py-1">
             <span className="text-sm font-bold text-muted">Tema</span>
             <ThemeToggle />

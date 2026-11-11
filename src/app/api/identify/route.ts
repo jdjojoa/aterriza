@@ -1,4 +1,4 @@
-import { chatModel, getGemini, isGeminiRateLimited, visionModel } from "@/lib/gemini";
+import { chatModel, generateTracked, isGeminiRateLimited, visionModel } from "@/lib/gemini";
 import { allergenNote, detectAllergens, FOOD_COLUMNS, FOOD_UNREADABLE_MESSAGE, toFoodCard } from "@/lib/foods";
 import {
   MAX_IMAGE_BASE64_LENGTH,
@@ -22,7 +22,7 @@ import {
   UNKNOWN_DISH,
   UNKNOWN_INGREDIENT,
 } from "@/lib/prompts/identify";
-import { getUsage, recordUsage } from "@/lib/rate-limit";
+import { getUsage } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import type { Schema } from "@google/genai";
 import type { AiFeature, Medicine } from "@/types/database";
@@ -32,6 +32,8 @@ type ImageMime = (typeof ALLOWED_MIME)[number];
 type Image = { data: string; mimeType: ImageMime };
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 type Quota = { remaining: number; limit: number };
+/** Who a follow-up Gemini call is logged for in ai_usage. */
+type Caller = { userId: string; feature: AiFeature };
 const DATA_URL = /^data:(image\/[a-z]+);base64,/;
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 
@@ -136,14 +138,20 @@ function parseFoodReading(raw: string): FoodReading | null {
   return { dishName, mainIngredients: [...new Set(ingredients)], confidence };
 }
 
-/** Short plain-text answer from the chat model (at most `sentences` sentences), or null. */
-async function shortText(prompt: string, unknownMarker: string, sentences: number) {
+/**
+ * Short plain-text answer from the chat model (at most `sentences` sentences), or null.
+ * A follow-up call: logged in ai_usage but not counted as another photo.
+ */
+async function shortText(caller: Caller, prompt: string, unknownMarker: string, sentences: number) {
   try {
-    const response = await getGemini().models.generateContent({
-      model: chatModel(),
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: { temperature: 0.2, maxOutputTokens: 600 },
-    });
+    const response = await generateTracked(
+      {
+        model: chatModel(),
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: { temperature: 0.2, maxOutputTokens: 600 },
+      },
+      { ...caller, countsForUser: false },
+    );
     const text = response.text?.replace(/\*\*|__|^#+\s*/gm, "").replace(/\s+/g, " ").trim();
     if (!text || text.includes(unknownMarker)) return null;
     const parts = text.match(/[^.!?]+[.!?]+/g) ?? [text];
@@ -154,8 +162,8 @@ async function shortText(prompt: string, unknownMarker: string, sentences: numbe
   }
 }
 
-async function explainGeneralUse(ingredients: string[]) {
-  const text = await shortText(buildGeneralUsePrompt(ingredients), UNKNOWN_INGREDIENT, 3);
+async function explainGeneralUse(caller: Caller, ingredients: string[]) {
+  const text = await shortText(caller, buildGeneralUsePrompt(ingredients), UNKNOWN_INGREDIENT, 3);
   // Apply the dose / wording rules.
   return text ? safeMedicineText(text) : null;
 }
@@ -179,17 +187,21 @@ async function readPhoto(
 
   let raw: string;
   try {
-    const response = await getGemini().models.generateContent({
-      model: visionModel(),
-      contents: [{ role: "user", parts: [{ inlineData: image }, { text: instruction }] }],
-      config: {
-        systemInstruction,
-        responseMimeType: "application/json",
-        responseSchema,
-        temperature: 0,
-        maxOutputTokens: 1000,
+    // Logs the call in ai_usage (also the user's daily photo count).
+    const response = await generateTracked(
+      {
+        model: visionModel(),
+        contents: [{ role: "user", parts: [{ inlineData: image }, { text: instruction }] }],
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema,
+          temperature: 0,
+          maxOutputTokens: 1000,
+        },
       },
-    });
+      { userId, feature, countsForUser: true },
+    );
     raw = response.text?.trim() ?? "";
   } catch (error) {
     if (isGeminiRateLimited(error)) {
@@ -199,7 +211,6 @@ async function readPhoto(
     return fail(502, "failed", "No pudimos analizar la foto. Intenta de nuevo.", usage.remaining);
   }
 
-  await recordUsage(userId, feature);
   return { raw, quota: { remaining: Math.max(0, usage.remaining - 1), limit: usage.limit } };
 }
 
@@ -277,7 +288,7 @@ async function identifyMedicine(supabase: Supabase, userId: string, image: Image
 
   // 6. No match: AI general use (validated), shown as "referencial".
   const generalUse = reading.activeIngredients.length
-    ? await explainGeneralUse(reading.activeIngredients)
+    ? await explainGeneralUse({ userId, feature: "photo_medicine" }, reading.activeIngredients)
     : null;
 
   return Response.json({ status: "ai", reading, generalUse, ...quota } satisfies IdentifyApiSuccess);
@@ -323,6 +334,7 @@ async function identifyFood(supabase: Supabase, userId: string, image: Image) {
 
   // 6. No match: short AI description, shown as "referencial", plus allergen note.
   const description = await shortText(
+    { userId, feature: "photo_food" },
     buildFoodDescriptionPrompt(reading.dishName, reading.mainIngredients),
     UNKNOWN_DISH,
     2,

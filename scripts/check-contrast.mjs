@@ -8,14 +8,16 @@ const themes = {
     muted: "#3F4166", border: "#6E6F92", primary: "#00105B", primaryHover: "#1B2A80",
     primaryEdge: "#6060B6", onPrimary: "#FCF8EC", accent: "#6060B6", accentSoft: "#CAB5E0",
     onAccentSoft: "#00105B", hover: "#F0E9F7", warningSoft: "#FFF4D6", onWarningSoft: "#7A4A00",
-    link: "#4F4FA6", ring: "#6060B6",
+    link: "#4F4FA6", ring: "#6060B6", warning: "#A16207", danger: "#C81E1E",
+    dangerSoft: "#FDE4E4", onDangerSoft: "#8B1111",
   },
   dark: {
     background: "#000A3D", surface: "#00105B", foreground: "#FCF8EC", heading: "#CAB5E0",
     muted: "#C4C2E0", border: "#8F92CC", primary: "#6060B6", primaryHover: "#5252A8",
     primaryEdge: "#CAB5E0", onPrimary: "#FFFFFF", accent: "#CAB5E0", accentSoft: "#2B2F80",
     onAccentSoft: "#FCF8EC", hover: "#1A2680", warningSoft: "#3A2E10", onWarningSoft: "#FFE3A3",
-    link: "#CAB5E0", ring: "#CAB5E0",
+    link: "#CAB5E0", ring: "#CAB5E0", warning: "#FACC15", danger: "#FF8A8A",
+    dangerSoft: "#4A0E1E", onDangerSoft: "#FFC9C9",
   },
 };
 
@@ -32,6 +34,7 @@ const text = [
   ["foreground", "hover"], ["heading", "hover"],
   ["link", "background"], ["link", "surface"], ["link", "hover"],
   ["accent", "background"], ["accent", "surface"],
+  ["onDangerSoft", "dangerSoft"], // Red alert in /admin
 ];
 const ui = [
   ["border", "background"], ["border", "surface"],
@@ -39,6 +42,9 @@ const ui = [
   ["primary", "background"], ["primary", "surface"], // Filled buttons
   ["ring", "background"], ["ring", "surface"],
   ["accent", "hover"], // Icons on hovered rows
+  // Gemini quota ring and hourly bars in /admin
+  ["warning", "surface"], ["danger", "surface"], // ring track: hover
+  ["warning", "hover"], ["danger", "hover"],
 ];
 
 const lum = (hex) => {

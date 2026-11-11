@@ -7,10 +7,10 @@ import {
 } from "@/lib/chat";
 import { buildChatContext, resolveCitations } from "@/lib/chat-context";
 import { countryName } from "@/lib/countries";
-import { chatModel, getGemini, isGeminiRateLimited } from "@/lib/gemini";
+import { chatModel, generateTracked, isGeminiRateLimited } from "@/lib/gemini";
 import { enforceMedicineRules, MEDICINE_TOPIC } from "@/lib/medicine-safety";
 import { buildChatSystemPrompt, offTopicReply } from "@/lib/prompts/chat";
-import { getUsage, recordUsage } from "@/lib/rate-limit";
+import { getUsage } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 const HISTORY_SIZE = 6;
@@ -179,11 +179,15 @@ async function handleChat(request: Request) {
   const askedAt = new Date();
   let raw: string;
   try {
-    const response = await getGemini().models.generateContent({
-      model: chatModel(),
-      contents,
-      config: { systemInstruction, temperature: 0.4, maxOutputTokens: 800 },
-    });
+    // Logs the call in ai_usage (also the user's daily count).
+    const response = await generateTracked(
+      {
+        model: chatModel(),
+        contents,
+        config: { systemInstruction, temperature: 0.4, maxOutputTokens: 800 },
+      },
+      { userId, feature: "chat", countsForUser: true },
+    );
     raw = response.text?.trim() ?? "";
   } catch (error) {
     if (isGeminiRateLimited(error)) {
@@ -202,8 +206,7 @@ async function handleChat(request: Request) {
   }
   const { text: reply, sources } = resolveCitations(cleaned, context.sources);
 
-  // 6. Usage + history
-  await recordUsage(userId, "chat");
+  // 6. History (usage was logged by generateTracked)
   if (!conversation) {
     const { data, error } = await supabase
       .from("conversations")

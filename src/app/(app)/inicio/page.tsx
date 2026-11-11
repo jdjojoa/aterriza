@@ -155,7 +155,7 @@ function PhotoCard() {
         Toma una foto de un medicamento o un plato y entiende qué es.
       </p>
       <div className="relative flex gap-3">
-        <Link href="/identificar" className={button}>
+        <Link href="/identificar?tipo=medicamento" className={button}>
           <Icon name="pill" size={20} />
           Medicamento
         </Link>
@@ -165,6 +165,23 @@ function PhotoCard() {
         </Link>
       </div>
     </section>
+  );
+}
+
+/** Only admins see it; the role comes from the server-side profile. */
+async function AdminButton() {
+  const profile = await getCurrentProfile();
+  if (profile.role !== "admin") return null;
+  return (
+    <Link
+      href="/admin"
+      className={`flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-primary-edge bg-surface px-4 font-bold text-heading shadow-sm transition-colors hover:bg-hover ${focusRing}`}
+    >
+      <span className="text-accent">
+        <Icon name="shield" size={20} />
+      </span>
+      Panel de administrador
+    </Link>
   );
 }
 
@@ -316,6 +333,9 @@ export default function HomePage() {
           <div {...rise(3)}>
             <Shortcuts />
           </div>
+          <Suspense fallback={null}>
+            <AdminButton />
+          </Suspense>
           <div className="order-last flex flex-col lg:order-none">
             <InstallAppButton />
           </div>

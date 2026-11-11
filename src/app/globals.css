@@ -33,6 +33,10 @@
   --hover: #f0e9f7;
   --warning-soft: #fff4d6;
   --on-warning-soft: #7a4a00;
+  --warning: #a16207;
+  --danger: #c81e1e;
+  --danger-soft: #fde4e4;
+  --on-danger-soft: #8b1111;
   --link: #4f4fa6;
   --ring: #6060b6;
 }
@@ -55,6 +59,10 @@
   --hover: #1a2680;
   --warning-soft: #3a2e10;
   --on-warning-soft: #ffe3a3;
+  --warning: #facc15;
+  --danger: #ff8a8a;
+  --danger-soft: #4a0e1e;
+  --on-danger-soft: #ffc9c9;
   --link: #cab5e0;
   --ring: #cab5e0;
 }
@@ -76,6 +84,10 @@
   --color-hover: var(--hover);
   --color-warning-soft: var(--warning-soft);
   --color-on-warning-soft: var(--on-warning-soft);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-on-danger-soft: var(--on-danger-soft);
   --color-link: var(--link);
   --color-ring: var(--ring);
   --color-brand-navy: var(--brand-navy);

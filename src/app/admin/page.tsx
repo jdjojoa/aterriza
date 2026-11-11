@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { GeminiQuotaCard } from "@/components/admin/GeminiQuota";
 import { Icon } from "@/components/icons/Icon";
 import { requireAdmin } from "@/lib/admin/auth";
 import { CONTENT_CONFIG, VERIFIED_TABLES } from "@/lib/admin/content-config";
+import { getGeminiQuota } from "@/lib/admin/gemini-quota";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Administración · Aterriza" };
@@ -96,6 +98,12 @@ async function Dashboard() {
   );
 }
 
+/** Gemini free-tier meter. getGeminiQuota checks the admin role itself. */
+async function GeminiQuotaSection() {
+  await connection();
+  return <GeminiQuotaCard quota={await getGeminiQuota()} />;
+}
+
 function DashboardSkeleton() {
   return (
     <div role="status" className="grid grid-cols-2 gap-3">
@@ -111,6 +119,15 @@ export default function AdminPage() {
   return (
     <>
       <h1 className="text-3xl font-extrabold tracking-tight text-heading">Administración</h1>
+      <Suspense
+        fallback={
+          <div role="status" className="h-96 animate-pulse rounded-2xl bg-accent-soft">
+            <span className="sr-only">Cargando la cuota de Gemini…</span>
+          </div>
+        }
+      >
+        <GeminiQuotaSection />
+      </Suspense>
       <Suspense fallback={<DashboardSkeleton />}>
         <Dashboard />
       </Suspense>

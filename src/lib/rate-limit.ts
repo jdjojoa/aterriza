@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { AiFeature } from "@/types/database";
+import type { AiCallStatus, AiFeature } from "@/types/database";
 
 /** Daily AI quota per user and feature. Days start at 00:00 in Lima. */
 export const DAILY_LIMITS: Record<AiFeature, number> = {
@@ -33,7 +33,10 @@ export function startOfLimaDay(now = new Date()) {
 
 export type Usage = { used: number; limit: number; remaining: number };
 
-/** How many AI calls the user made today for this feature. */
+/**
+ * How many AI actions the user made today for this feature. Only successful
+ * user actions count: follow-up calls and failures are logged but free.
+ */
 export async function getUsage(userId: string, feature: AiFeature): Promise<Usage> {
   const supabase = createAdminClient();
   const { count, error } = await supabase
@@ -41,6 +44,8 @@ export async function getUsage(userId: string, feature: AiFeature): Promise<Usag
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
     .in("feature", QUOTA_GROUPS[feature])
+    .eq("status", "ok")
+    .eq("counts_for_user", true)
     .gte("created_at", startOfLimaDay());
   // HEAD requests can come back without an error body: a null count is a failure too.
   if (error || count === null) {
@@ -52,9 +57,24 @@ export async function getUsage(userId: string, feature: AiFeature): Promise<Usag
   return { used, limit, remaining: Math.max(0, limit - used) };
 }
 
-/** Records one AI call. Service role only: users cannot write ai_usage (RLS). */
-export async function recordUsage(userId: string, feature: AiFeature) {
+export type GeminiCall = {
+  userId: string;
+  feature: AiFeature;
+  model: string;
+  status: AiCallStatus;
+  /** true = this call is the user's action and counts toward their daily limit. */
+  countsForUser: boolean;
+};
+
+/** Records one real Gemini call. Service role only: users cannot write ai_usage (RLS). */
+export async function recordGeminiCall(call: GeminiCall) {
   const supabase = createAdminClient();
-  const { error } = await supabase.from("ai_usage").insert({ user_id: userId, feature });
+  const { error } = await supabase.from("ai_usage").insert({
+    user_id: call.userId,
+    feature: call.feature,
+    model: call.model,
+    status: call.status,
+    counts_for_user: call.countsForUser,
+  });
   if (error) throw new Error(`ai_usage insert failed: ${error.message}`);
 }

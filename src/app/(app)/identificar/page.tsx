@@ -24,7 +24,7 @@ async function loadFoods(): Promise<FoodCard[] | null> {
 
 async function IdentifyData({ searchParams }: { searchParams: PageProps<"/identificar">["searchParams"] }) {
   const { tipo } = await searchParams;
-  const initialTab = tipo === "comida" ? "food" : "medicine";
+  const initialTab = tipo === "comida" ? "food" : "medicine"; // ?tipo=medicamento or none → medicine
   const profile = await getCurrentProfile();
   const [usage, foods] = await Promise.all([getUsage(profile.id, "photo_medicine"), loadFoods()]);
   return <IdentifyClient initialTab={initialTab} initialRemaining={usage.remaining} limit={usage.limit} foods={foods} />;

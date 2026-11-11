@@ -33,6 +33,7 @@ export type ReportStatus = "open" | "resolved" | "dismissed";
 export type TipStatus = "pending" | "approved" | "rejected";
 export type ChatRole = "user" | "assistant";
 export type AiFeature = "chat" | "photo_medicine" | "photo_food";
+export type AiCallStatus = "ok" | "error" | "rate_limited";
 /** transport_routes.path: list of [lat, lng] points for Leaflet. */
 export type RoutePath = [number, number][];
 
@@ -254,7 +255,20 @@ type AiUsageRow = {
   id: string;
   user_id: string;
   feature: AiFeature;
+  /** Gemini model id; null for rows written before 0013. */
+  model: string | null;
+  status: AiCallStatus;
+  /** true = counts toward the user's daily limit (when status = "ok"). */
+  counts_for_user: boolean;
   created_at: string;
+};
+
+type AiUsageSummaryRow = {
+  model: string | null;
+  feature: AiFeature;
+  status: AiCallStatus;
+  hour: string;
+  calls: number;
 };
 
 type ExchangeRateRow = {
@@ -469,6 +483,10 @@ export type Database = {
       admin_set_user_role: {
         Args: { p_user_id: string; p_role: UserRole };
         Returns: UserRole;
+      };
+      admin_ai_usage_summary: {
+        Args: { p_since: string };
+        Returns: AiUsageSummaryRow[];
       };
       get_approved_tips: {
         Args: { p_limit?: number };
