@@ -16,14 +16,14 @@ for (const size of [192, 512]) {
     .toFile(fileURLToPath(new URL(`icon-${size}.png`, outDir)));
 }
 
-// Maskable: full-bleed green square, logo content kept inside the 80% safe zone.
+// Maskable: full-bleed lilac square (brand lilac, see globals.css), logo content kept inside the 80% safe zone.
 const inner = logo
   .toString()
   .replace(/<svg[^>]*>/, "")
   .replace("</svg>", "")
   .replace(/<circle[^>]*\/>/, "");
 const maskable = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#B5D275"/>
+  <rect width="64" height="64" fill="#CAB5E0"/>
   <g transform="translate(32 32) scale(0.7) translate(-32 -32)">${inner}</g>
 </svg>`;
 

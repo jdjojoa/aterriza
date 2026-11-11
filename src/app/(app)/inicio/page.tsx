@@ -63,7 +63,7 @@ async function Greeting() {
       <h1 className="text-3xl font-extrabold tracking-tight text-heading lg:text-4xl">
         ¡Hola, {firstName(profile.full_name)}!
       </h1>
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-edge bg-primary px-3 py-1 text-sm font-bold text-on-primary">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary px-3 py-1 text-sm font-bold text-on-primary">
         {countryName(profile.origin_country)}
         <span aria-hidden="true">→</span>
         <span className="sr-only">a</span>
@@ -109,7 +109,7 @@ function AskBar() {
       <label htmlFor="ask-input" className="sr-only">
         Pregúntale a Aterriza
       </label>
-      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted">
+      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-accent">
         <Icon name="search" size={20} />
       </span>
       <input
@@ -126,7 +126,7 @@ function AskBar() {
       <button
         type="submit"
         aria-label="Preguntar"
-        className={`absolute right-1.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-primary-edge bg-primary text-on-primary transition-colors hover:bg-primary-hover ${focusRing}`}
+        className={`absolute right-1.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-primary bg-primary text-on-primary transition-colors hover:bg-primary-hover ${focusRing}`}
       >
         <Icon name="send" size={20} />
       </button>
@@ -139,7 +139,7 @@ function PhotoCard() {
   return (
     <section
       aria-labelledby="photo-title"
-      className="relative flex flex-col gap-4 overflow-hidden rounded-3xl border border-primary-edge bg-primary p-5 text-on-primary shadow-sm lg:p-7"
+      className="relative flex flex-col gap-4 overflow-hidden rounded-3xl border border-primary bg-primary p-5 text-on-primary shadow-sm lg:p-7"
     >
       {/* Decorative camera in the corner. */}
       <span aria-hidden="true" className="pointer-events-none absolute -right-6 -top-6 size-32 rounded-full bg-on-primary/10" />
@@ -198,7 +198,9 @@ function Shortcuts() {
 function CardTitle({ icon, children }: { icon: "currency" | "book"; children: ReactNode }) {
   return (
     <h2 className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-muted">
-      <Icon name={icon} size={18} />
+      <span className="text-accent">
+        <Icon name={icon} size={18} />
+      </span>
       {children}
     </h2>
   );
@@ -267,7 +269,9 @@ async function LatestTips() {
   return (
     <section aria-labelledby="latest-tips" className="flex flex-col gap-2 rounded-2xl border border-border/30 bg-surface p-5 pb-3 shadow-sm">
       <h2 id="latest-tips" className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-muted">
-        <Icon name="lightbulb" size={18} />
+        <span className="text-accent">
+          <Icon name="lightbulb" size={18} />
+        </span>
         Últimos aportes
       </h2>
       <LatestTipsList tips={data} />

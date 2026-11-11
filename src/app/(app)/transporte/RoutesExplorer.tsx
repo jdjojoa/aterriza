@@ -42,14 +42,14 @@ export function RoutesExplorer({ routes }: { routes: RouteItem[] }) {
   const end = destination ?? (line ? { lat: line[line.length - 1][0], lng: line[line.length - 1][1] } : null);
   const markers: MapMarker[] = [];
   if (start) {
-    markers.push({ id: "origin", ...start, title: `Inicio: ${selected.origin_name ?? "sin nombre"}`, tone: "green" });
+    markers.push({ id: "origin", ...start, title: `Inicio: ${selected.origin_name ?? "sin nombre"}`, tone: "accent" });
   }
   if (end) {
     markers.push({
       id: "destination",
       ...end,
       title: `Fin: ${selected.destination_name ?? "sin nombre"}`,
-      tone: "blue",
+      tone: "primary",
     });
   }
   const modeLabel = TRANSPORT_MODE_LABELS[selected.mode];
@@ -72,11 +72,11 @@ export function RoutesExplorer({ routes }: { routes: RouteItem[] }) {
         </div>
         <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted" aria-label="Leyenda del mapa">
           <li className="flex items-center gap-1.5">
-            <span aria-hidden="true" className="size-3 rounded-full bg-[var(--map-green)]" />
+            <span aria-hidden="true" className="size-3 rounded-full bg-[var(--map-pin-accent)]" />
             Inicio
           </li>
           <li className="flex items-center gap-1.5">
-            <span aria-hidden="true" className="size-3 rounded-full bg-[var(--map-blue)]" />
+            <span aria-hidden="true" className="size-3 rounded-full bg-[var(--map-pin-primary)]" />
             Fin
           </li>
           {line && (

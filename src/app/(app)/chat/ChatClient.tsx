@@ -350,7 +350,7 @@ export function ChatClient({
             type="button"
             onClick={startNew}
             disabled={listBusy}
-            className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary-edge bg-primary text-on-primary hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary bg-primary text-on-primary hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Icon name="plus" />
             <span className="sr-only">Nuevo chat</span>
@@ -444,7 +444,7 @@ export function ChatClient({
             type="submit"
             disabled={pending || loading || outOfQuota || !draft.trim()}
             aria-label="Enviar"
-            className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary-edge bg-primary text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary bg-primary text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Icon name="send" />
           </button>

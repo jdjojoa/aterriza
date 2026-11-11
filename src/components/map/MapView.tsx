@@ -6,7 +6,7 @@ import { useEffect, useMemo } from "react";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import { PIURA_CENTER, type LatLng } from "@/lib/maps";
 
-export type MarkerTone = "green" | "blue";
+export type MarkerTone = "accent" | "primary";
 
 export type MapMarker = LatLng & {
   id: string;
@@ -128,7 +128,7 @@ export default function MapView({
         <Marker
           key={m.id}
           position={[m.lat, m.lng]}
-          icon={pinIcon(m.tone ?? "green", Boolean(m.emphasized))}
+          icon={pinIcon(m.tone ?? "accent", Boolean(m.emphasized))}
           title={m.title}
           alt={m.title}
           zIndexOffset={m.emphasized ? 1000 : 0}
