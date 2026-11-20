@@ -32,7 +32,7 @@ export default function QrPage() {
           className="h-auto w-full"
         />
         <span className="absolute left-1/2 top-1/2 flex size-[22%] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white p-[1.5%]">
-          <Logo size={256} title="" className="size-full" />
+          <Logo variant="icon" size={256} title="" className="size-full" />
         </span>
       </div>
 

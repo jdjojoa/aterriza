@@ -108,7 +108,7 @@ function Hero() {
       <div aria-hidden="true" className="hero-veil absolute inset-0 -z-10" />
 
       <div className="parallax-lift flex w-full max-w-xl flex-col items-center gap-5 text-center">
-        <HeroMark className="size-44 sm:size-56 lg:size-64" />
+        <HeroMark className="size-40 sm:size-52 lg:size-60" />
         <p className="hero-fade rounded-full border border-border/30 bg-surface/80 px-3 py-1 text-sm font-bold text-heading backdrop-blur" style={{ "--delay": "0.2s" } as CSSProperties}>
           Colombia → Piura, Perú
         </p>
@@ -303,7 +303,7 @@ export default function Home() {
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-2">
           <Link
             href="/"
-            className="flex items-center gap-2 rounded-xl text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="logo-hover flex items-center gap-2 rounded-xl text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <Logo size={36} />
             <span className="hidden text-lg font-extrabold min-[400px]:inline">Aterriza</span>

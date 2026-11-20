@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
           <div className="flex items-center justify-between gap-3">
             <Link
               href="/admin"
-              className="flex items-center gap-2 rounded-xl font-extrabold text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="logo-hover flex items-center gap-2 rounded-xl font-extrabold text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               <Logo size={32} title="" />
               Aterriza · Admin
