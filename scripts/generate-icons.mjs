@@ -1,14 +1,15 @@
 // Generates the installed-app icons from public/brand/logo-app.svg (navy full-bleed,
-// globe + orbit + pin + plane inside the maskable safe zone), the favicon from
-// public/brand/logo-icon.svg (globe + pin) and the Open Graph image from
+// globe + orbit + pin + plane inside the maskable safe zone), the browser-tab icons
+// from public/brand/logo-favicon.svg (simplified version for 16–48 px) and the Open Graph image from
 // public/brand/logo-full.svg. Run `npm run logo` first.
 // Usage: npm run icons
 // Outputs:
 //   public/icons/icon-192.png, icon-512.png   logo-app.svg, "any" purpose
 //   public/icons/icon-maskable-512.png        logo-app.svg (drawing inside the 80% safe zone)
-//   src/app/icon.png (512)                    <link rel="icon"> fallback for icon.svg
+//   src/app/icon.svg                          = logo-favicon.svg (browser tab)
+//   src/app/icon.png (512)                    logo-favicon.svg, <link rel="icon"> fallback for icon.svg
 //   src/app/apple-icon.png (180)              logo-app.svg, iOS home screen (no transparency)
-//   src/app/favicon.ico (16/32/48)            browser tab
+//   src/app/favicon.ico (16/32/48)            logo-favicon.svg, browser tab
 //   src/app/opengraph-image.png (1200×630)    link previews (WhatsApp, redes)
 // After changing icons, bump ICONS_VERSION in src/app/manifest.ts and VERSION in public/sw.js.
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -20,7 +21,7 @@ const LAVENDER = "#6060B6";
 const CREAM = "#FCF8EC";
 
 const root = new URL("../", import.meta.url);
-const logo = await readFile(new URL("public/brand/logo-icon.svg", root));
+const tabLogo = await readFile(new URL("public/brand/logo-favicon.svg", root));
 const appLogo = await readFile(new URL("public/brand/logo-app.svg", root));
 const fullLogo = await readFile(new URL("public/brand/logo-full.svg", root));
 const iconsDir = new URL("public/icons/", root);
@@ -29,9 +30,9 @@ await mkdir(iconsDir, { recursive: true });
 
 const path = (dir, name) => fileURLToPath(new URL(name, dir));
 
-/** Icon alone (globe + pin, transparent corners). */
-const plain = (size) =>
-  sharp(logo, { density: 72 * (size / 64) * 2 }).resize(size, size).png().toBuffer();
+/** Browser-tab icon (32×32 grid, navy rounded square). */
+const tab = (size) =>
+  sharp(tabLogo, { density: Math.max(72, 72 * (size / 32) * 4) }).resize(size, size).png().toBuffer();
 
 /** Installed-app icon (108×108 maskable grid, full-bleed navy). */
 const app = (size) =>
@@ -63,10 +64,11 @@ await writeFile(path(iconsDir, "icon-192.png"), await app(192));
 await writeFile(path(iconsDir, "icon-512.png"), await app(512));
 await writeFile(path(iconsDir, "icon-maskable-512.png"), await app(512));
 
-await writeFile(path(appDir, "icon.png"), await plain(512));
+await writeFile(path(appDir, "icon.svg"), tabLogo);
+await writeFile(path(appDir, "icon.png"), await tab(512));
 await writeFile(path(appDir, "apple-icon.png"), await app(180));
 
-const favicon = await Promise.all([16, 32, 48].map(async (size) => ({ size, data: await plain(size) })));
+const favicon = await Promise.all([16, 32, 48].map(async (size) => ({ size, data: await tab(size) })));
 await writeFile(path(appDir, "favicon.ico"), ico(favicon));
 
 /** 1200×630 link preview: full logo and name on cream. */
@@ -84,4 +86,4 @@ async function openGraph() {
 }
 await writeFile(path(appDir, "opengraph-image.png"), await openGraph());
 
-console.log("Icons written to public/icons and src/app (favicon.ico, icon.png, apple-icon.png, opengraph-image.png)");
+console.log("Icons written to public/icons and src/app (favicon.ico, icon.svg, icon.png, apple-icon.png, opengraph-image.png)");
