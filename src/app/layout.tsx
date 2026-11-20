@@ -9,7 +9,11 @@ const nunito = Nunito({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+
 export const metadata: Metadata = {
+  // Absolute URLs for opengraph-image.png in link previews.
+  metadataBase: siteUrl ? new URL(siteUrl) : undefined,
   title: "Aterriza",
   description: "Guía para estudiantes colombianos que llegan a Piura, Perú",
   applicationName: "Aterriza",

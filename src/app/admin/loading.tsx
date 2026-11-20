@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/ui/PageSkeleton";
+import { LogoLoader } from "@/components/ui/LogoLoader";
 
 export default function Loading() {
-  return <PageSkeleton />;
+  return <LogoLoader />;
 }

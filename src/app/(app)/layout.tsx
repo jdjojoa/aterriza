@@ -19,7 +19,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         <div className="mx-auto flex max-w-md items-center justify-between gap-3 px-4 py-2 lg:max-w-[1100px]">
           <Link
             href="/inicio"
-            className="flex items-center gap-2 rounded-xl font-extrabold text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="logo-hover flex items-center gap-2 rounded-xl font-extrabold text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <Logo size={32} title="" />
             Aterriza

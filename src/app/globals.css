@@ -223,3 +223,68 @@ body {
   font-weight: 800;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
 }
+
+/* ---------------------------------------------------------------------------
+ * Logo motion (src/components/Logo.tsx). The logo is still by default; a
+ * wrapper class opts in. Continents loop by translating one LAND_PERIOD (38),
+ * so -38px and 0 look identical. Landing intro lives in landing.css.
+ * ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  /* Header/nav link: small globe spin on hover or keyboard focus. */
+  .logo-hover:hover .logo-land-spin,
+  .logo-hover:focus-visible .logo-land-spin {
+    animation: logo-land-spin 1.1s cubic-bezier(0.45, 0, 0.2, 1);
+  }
+
+  /* Loading screen: the plane keeps circling the orbit, the globe drifts. */
+  .logo-loader .logo-plane {
+    animation: logo-plane-orbit 2.4s linear infinite;
+  }
+
+  .logo-loader .logo-land {
+    animation: logo-land-spin 9.6s linear infinite;
+  }
+}
+
+@keyframes logo-land-spin {
+  from {
+    transform: translateX(-38px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/*
+ * Plane around the whole orbit (ellipse c(30,36) rx29 ry9 tilted -20°, sampled
+ * every 15°). Rotation follows the tangent; the plane
+ * fades out where the back of the orbit passes behind the globe and is smaller
+ * there, which reads as depth.
+ */
+@keyframes logo-plane-orbit {
+  0% { opacity: 1; transform: translate(2.75px, 45.92px) rotate(70deg) scale(0.62); }
+  4.17% { opacity: 1; transform: translate(4.47px, 47.77px) rotate(29.19deg) scale(0.65); }
+  8.33% { opacity: 1; transform: translate(7.94px, 48.82px) rotate(8.26deg) scale(0.68); }
+  12.5% { opacity: 1; transform: translate(12.91px, 48.99px) rotate(-2.76deg) scale(0.7); }
+  16.67% { opacity: 1; transform: translate(19.04px, 48.28px) rotate(-9.84deg) scale(0.72); }
+  20.83% { opacity: 1; transform: translate(25.92px, 46.74px) rotate(-15.25deg) scale(0.74); }
+  25% { opacity: 1; transform: translate(33.08px, 44.46px) rotate(-20deg) scale(0.74); }
+  29.17% { opacity: 1; transform: translate(40.03px, 41.6px) rotate(-24.75deg) scale(0.74); }
+  33.33% { opacity: 1; transform: translate(46.29px, 38.36px) rotate(-30.16deg) scale(0.72); }
+  37.5% { opacity: 1; transform: translate(51.45px, 34.97px) rotate(-37.24deg) scale(0.7); }
+  41.67% { opacity: 1; transform: translate(55.14px, 31.64px) rotate(-48.26deg) scale(0.68); }
+  45.83% { opacity: 1; transform: translate(57.12px, 28.61px) rotate(-69.19deg) scale(0.65); }
+  50% { opacity: 1; transform: translate(57.25px, 26.08px) rotate(-110deg) scale(0.62); }
+  54.17% { opacity: 1; transform: translate(55.53px, 24.23px) rotate(-150.81deg) scale(0.59); }
+  58.33% { opacity: 1; transform: translate(52.06px, 23.18px) rotate(-171.74deg) scale(0.56); }
+  62.5% { opacity: 0; transform: translate(47.09px, 23.01px) rotate(-182.76deg) scale(0.54); }
+  66.67% { opacity: 0; transform: translate(40.96px, 23.72px) rotate(-189.84deg) scale(0.52); }
+  70.83% { opacity: 0; transform: translate(34.08px, 25.26px) rotate(-195.25deg) scale(0.5); }
+  75% { opacity: 0; transform: translate(26.92px, 27.54px) rotate(-200deg) scale(0.5); }
+  79.17% { opacity: 0; transform: translate(19.97px, 30.4px) rotate(-204.75deg) scale(0.5); }
+  83.33% { opacity: 0; transform: translate(13.71px, 33.64px) rotate(-210.16deg) scale(0.52); }
+  87.5% { opacity: 1; transform: translate(8.55px, 37.03px) rotate(-217.24deg) scale(0.54); }
+  91.67% { opacity: 1; transform: translate(4.86px, 40.36px) rotate(-228.26deg) scale(0.56); }
+  95.83% { opacity: 1; transform: translate(2.88px, 43.39px) rotate(-249.19deg) scale(0.59); }
+  100% { opacity: 1; transform: translate(2.75px, 45.92px) rotate(-290deg) scale(0.62); }
+}

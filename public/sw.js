@@ -5,7 +5,7 @@
 // - Never touches /api, /auth or any cross-origin request (Supabase, OSM tiles, Gemini).
 // Bump VERSION to drop old caches after changing this file.
 
-const VERSION = "v2"; // v2: blue/lilac icons
+const VERSION = "v3"; // v3: globe logo
 const SHELL_CACHE = `aterriza-shell-${VERSION}`;
 const PAGES_CACHE = "aterriza-pages"; // Also cleared on sign-out (ProfileMenu.tsx).
 const OFFLINE_URL = "/offline";
@@ -14,9 +14,9 @@ const SHELL_URLS = [
   OFFLINE_URL,
   "/manifest.webmanifest",
   "/logo.svg",
-  "/icons/icon-192.png?v=2",
-  "/icons/icon-512.png?v=2",
-  "/icons/icon-maskable-512.png?v=2",
+  "/icons/icon-192.png?v=3",
+  "/icons/icon-512.png?v=3",
+  "/icons/icon-maskable-512.png?v=3",
 ];
 
 // Paths that must always go straight to the network.

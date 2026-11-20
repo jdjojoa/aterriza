@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Sin conexión · Aterriza" };
 export default function OfflinePage() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 px-4 py-10 text-center">
-      <Logo size={88} title="" />
+      <Logo variant="full" size={112} title="" />
       <h1 className="text-3xl font-extrabold tracking-tight text-heading">
         Sin conexión
       </h1>

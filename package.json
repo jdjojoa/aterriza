@@ -15,7 +15,8 @@
     "icons": "node scripts/generate-icons.mjs",
     "seed": "tsx scripts/seed-from-csv.ts",
     "routes:recalculate": "tsx scripts/recalculate-route-paths.ts",
-    "qr": "node scripts/generate-qr.mjs"
+    "qr": "node scripts/generate-qr.mjs",
+    "logo": "tsx scripts/generate-logo.mts"
   },
   "dependencies": {
     "@google/genai": "^3.0.0",

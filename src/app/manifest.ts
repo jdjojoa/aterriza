@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 /** Bump after regenerating icons (npm run icons) so browsers drop the old ones. */
-const ICONS_VERSION = 2;
+const ICONS_VERSION = 3;
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
