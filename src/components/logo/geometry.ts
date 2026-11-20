@@ -1,7 +1,7 @@
 /**
  * Single source of truth for the Aterriza logo (globe + orbit + airplane + pin).
  * Used by src/components/Logo.tsx and by scripts/generate-logo.ts, which writes
- * public/brand/logo-{full,mark,icon}*.svg and public/logo.svg.
+ * public/brand/*.svg, public/logo.svg and src/app/icon.svg.
  *
  * All variants share a 64×64 viewBox. The `full` and `mark` variants keep the
  * same layout so the CSS animations (src/app/globals.css, landing.css) work on

@@ -5,10 +5,9 @@
 //   public/brand/logo-mark.svg, logo-mark-dark.svg   header logo (bolder)
 //   public/brand/logo-icon.svg                       globe + pin (works on light and dark)
 //   public/logo.svg                                  = logo-mark.svg (precached by public/sw.js)
+//   src/app/icon.svg                                 = logo-icon.svg (browser tab)
 // Every piece is a group with an id (orbit-back, globe, continents, orbit, pin, plane)
 // so the files can be animated with CSS.
-// The browser-tab icon (src/app/icon.svg) is not generated here: it is a copy of
-// public/brand/logo-favicon.svg written by npm run icons.
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import {
@@ -103,6 +102,7 @@ const files: Record<string, string> = {
   "public/brand/logo-mark-dark.svg": full("mark", "dark"),
   "public/brand/logo-icon.svg": icon(),
   "public/logo.svg": full("mark", "light"),
+  "src/app/icon.svg": icon(),
 };
 
 for (const [name, content] of Object.entries(files)) {
