@@ -1,11 +1,13 @@
-// Generates every app icon from public/brand/logo-icon.svg (globe + pin) and the
-// Open Graph image from public/brand/logo-full.svg. Run `npm run logo` first.
+// Generates the installed-app icons from public/brand/logo-app.svg (navy full-bleed,
+// globe + orbit + pin + plane inside the maskable safe zone), the favicon from
+// public/brand/logo-icon.svg (globe + pin) and the Open Graph image from
+// public/brand/logo-full.svg. Run `npm run logo` first.
 // Usage: npm run icons
 // Outputs:
-//   public/icons/icon-192.png, icon-512.png   transparent corners, "any" purpose
-//   public/icons/icon-maskable-512.png        navy full-bleed, logo inside the 80% safe zone
+//   public/icons/icon-192.png, icon-512.png   logo-app.svg, "any" purpose
+//   public/icons/icon-maskable-512.png        logo-app.svg (drawing inside the 80% safe zone)
 //   src/app/icon.png (512)                    <link rel="icon"> fallback for icon.svg
-//   src/app/apple-icon.png (180)              iOS home screen (no transparency allowed)
+//   src/app/apple-icon.png (180)              logo-app.svg, iOS home screen (no transparency)
 //   src/app/favicon.ico (16/32/48)            browser tab
 //   src/app/opengraph-image.png (1200×630)    link previews (WhatsApp, redes)
 // After changing icons, bump ICONS_VERSION in src/app/manifest.ts and VERSION in public/sw.js.
@@ -19,6 +21,7 @@ const CREAM = "#FCF8EC";
 
 const root = new URL("../", import.meta.url);
 const logo = await readFile(new URL("public/brand/logo-icon.svg", root));
+const appLogo = await readFile(new URL("public/brand/logo-app.svg", root));
 const fullLogo = await readFile(new URL("public/brand/logo-full.svg", root));
 const iconsDir = new URL("public/icons/", root);
 const appDir = new URL("src/app/", root);
@@ -30,18 +33,9 @@ const path = (dir, name) => fileURLToPath(new URL(name, dir));
 const plain = (size) =>
   sharp(logo, { density: 72 * (size / 64) * 2 }).resize(size, size).png().toBuffer();
 
-/** Logo centred on a full-bleed navy square, scaled to `scale` of the side. */
-const onNavy = (size, scale) => {
-  const inner = logo
-    .toString()
-    .replace(/<svg[^>]*>/, "")
-    .replace("</svg>", "");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="${NAVY}"/>
-  <g transform="translate(32 32) scale(${scale}) translate(-32 -32)">${inner}</g>
-</svg>`;
-  return sharp(Buffer.from(svg), { density: 72 * (size / 64) * 2 }).resize(size, size).png().toBuffer();
-};
+/** Installed-app icon (108×108 maskable grid, full-bleed navy). */
+const app = (size) =>
+  sharp(appLogo, { density: 72 * (size / 108) * 2 }).resize(size, size).png().toBuffer();
 
 /** ICO container with embedded PNG images (supported by every current browser). */
 function ico(pngs) {
@@ -65,14 +59,12 @@ function ico(pngs) {
   return Buffer.concat([header, ...pngs.map((p) => p.data)]);
 }
 
-await writeFile(path(iconsDir, "icon-192.png"), await plain(192));
-await writeFile(path(iconsDir, "icon-512.png"), await plain(512));
-// Maskable: the safe zone is a circle of 80% diameter; the globe (56/64 of the
-// icon) scaled by 0.86 fills 75%.
-await writeFile(path(iconsDir, "icon-maskable-512.png"), await onNavy(512, 0.86));
+await writeFile(path(iconsDir, "icon-192.png"), await app(192));
+await writeFile(path(iconsDir, "icon-512.png"), await app(512));
+await writeFile(path(iconsDir, "icon-maskable-512.png"), await app(512));
 
 await writeFile(path(appDir, "icon.png"), await plain(512));
-await writeFile(path(appDir, "apple-icon.png"), await onNavy(180, 0.9));
+await writeFile(path(appDir, "apple-icon.png"), await app(180));
 
 const favicon = await Promise.all([16, 32, 48].map(async (size) => ({ size, data: await plain(size) })));
 await writeFile(path(appDir, "favicon.ico"), ico(favicon));

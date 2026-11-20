@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+  <rect width="108" height="108" fill="#00105B"/>
+  <path d="M52 94.25C52 94.25 29.5 59.38 29.5 47A22.5 22.5 0 0 1 74.5 47C74.5 59.38 52 94.25 52 94.25Z" fill="#FCF8EC"/>
+  <circle cx="52" cy="47" r="17" fill="#00105B"/>
+  <defs><clipPath id="gc2"><circle cx="52" cy="47" r="15"/></clipPath></defs>
+  <circle cx="52" cy="47" r="15" fill="#6060B6"/>
+  <g clip-path="url(#gc2)"><g transform="translate(52 47) scale(0.54) translate(-23 -32)" fill="#CAB5E0"><path d="M10 21C14 13.5 25 11 31 15C33.5 18 29.5 22 27.5 25C25.5 28 24.5 30.5 25.5 34C28.5 34.5 31 37.5 30 42.5C29 48 26 53 23 57C20 52 19.5 47 18 43.5C16.5 40.5 17 36.5 19 33.5C15 31.5 11 28.5 10 24.5C9.8 23.3 9.8 22 10 21Z"/></g></g>
+  <g transform="translate(76 25) rotate(-30) scale(0.8)"><path d="M10 0C10-1.7 8.6-2.7 7-2.7L2.5-2.7L-2.5-10L-6.2-10L-3.2-2.7L-6.5-2.7L-8.6-6.2L-10.8-6.2L-9.6 0L-10.8 6.2L-8.6 6.2L-6.5 2.7L-3.2 2.7L-6.2 10L-2.5 10L2.5 2.7L7 2.7C8.6 2.7 10 1.7 10 0Z" fill="#CAB5E0" stroke="#00105B" stroke-width="3.75" stroke-linejoin="round" paint-order="stroke"/></g>
+</svg>
