@@ -8,8 +8,10 @@ import { InstallAppButton } from "@/components/InstallAppButton";
 import { firstName, getCurrentProfile } from "@/lib/auth";
 import { MAX_MESSAGE_LENGTH } from "@/lib/chat";
 import { countryName } from "@/lib/countries";
-import { CURRENCIES, currencyForCountry, formatAmount, type Currency } from "@/lib/currency";
+import { currencyInfo, formatAmount, missingRateNotice, quoteCurrencyFor } from "@/lib/currency";
+import { loadEquivalents } from "@/lib/equivalents";
 import { getExchangeRates } from "@/lib/exchange-rates";
+import { equivalentCountry, originCurrency, originLabel, profileOrigin } from "@/lib/origin";
 import { SECTIONS } from "@/lib/sections";
 import { wordOfDayIndex } from "@/lib/slang";
 import { createClient } from "@/lib/supabase/server";
@@ -18,6 +20,8 @@ import { LatestTipsList } from "./LatestTipsList";
 export const metadata: Metadata = { title: "Inicio · Aterriza" };
 
 const SHORTCUTS = ["/transporte", "/lugares", "/moneda", "/jerga", "/costumbres", "/aportes"];
+/** National students have no foreign currency: the converter stays in the menu. */
+const NATIONAL_SHORTCUTS = SHORTCUTS.filter((href) => href !== "/moneda");
 
 const focusRing =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -39,17 +43,28 @@ function Skeleton({ className, label }: { className: string; label?: string }) {
 // Data
 // -----------------------------------------------------------------------------
 
-/** One rate lookup per request, shared by the mobile widget and the desktop card. */
+/**
+ * One rate lookup per request, shared by the mobile widget and the desktop
+ * card. PEN ↔ the user's currency; USD when the API has no rate for it.
+ * National students get no widget (null).
+ */
 const getRateOfDay = cache(async () => {
   // Request time only: getExchangeRates may write today's rates.
   await connection();
-  const [data, profile] = await Promise.all([getExchangeRates(), getCurrentProfile()]);
+  const profile = await getCurrentProfile();
+  const origin = profileOrigin(profile);
+  if (origin.type === "nacional") return null;
+  const data = await getExchangeRates();
   if (!data) return null;
-  const origin = currencyForCountry(profile.origin_country);
-  // Peru or an unsupported country: show the US dollar instead.
-  const quote: Currency = origin && origin !== "PEN" && data.rates[origin] ? origin : "USD";
+  const { quote, missing } = quoteCurrencyFor(originCurrency(origin), data.rates);
   const rate = data.rates[quote];
-  return rate ? { quote, rate, fetchedAt: data.fetchedAt } : null;
+  if (!rate) return null;
+  return {
+    quote: currencyInfo(quote),
+    missing: missing ? currencyInfo(missing) : null,
+    rate,
+    fetchedAt: data.fetchedAt,
+  };
 });
 
 // -----------------------------------------------------------------------------
@@ -64,7 +79,7 @@ async function Greeting() {
         ¡Hola, {firstName(profile.full_name)}!
       </h1>
       <span className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary px-3 py-1 text-sm font-bold text-on-primary">
-        {countryName(profile.origin_country)}
+        {originLabel(profileOrigin(profile))}
         <span aria-hidden="true">→</span>
         <span className="sr-only">a</span>
         {profile.destination_city}
@@ -92,8 +107,11 @@ async function RateWidget() {
     >
       <span className="text-xs font-bold text-muted">Cambio hoy</span>
       <span className="whitespace-nowrap text-sm font-extrabold text-heading">
-        S/ 1 = {formatAmount(rate.rate, rate.quote)} {rate.quote}
+        S/ 1 = {formatAmount(rate.rate, rate.quote)} {rate.quote.code}
       </span>
+      {rate.missing && (
+        <span className="max-w-36 text-xs text-muted">Aún sin tasa para {rate.missing.code}</span>
+      )}
       <span className="sr-only">. Abrir el conversor de moneda.</span>
     </Link>
   );
@@ -185,8 +203,10 @@ async function AdminButton() {
   );
 }
 
-function Shortcuts() {
-  const items = SHORTCUTS.flatMap((href) => SECTIONS.filter((s) => s.href === href));
+async function Shortcuts() {
+  const profile = await getCurrentProfile();
+  const hrefs = profileOrigin(profile).type === "nacional" ? NATIONAL_SHORTCUTS : SHORTCUTS;
+  const items = hrefs.flatMap((href) => SECTIONS.filter((s) => s.href === href));
   return (
     <nav aria-label="Accesos rápidos">
       <ul className="grid grid-cols-3 gap-3 lg:grid-cols-6">
@@ -226,7 +246,7 @@ function CardTitle({ icon, children }: { icon: "currency" | "book"; children: Re
 async function RateCard() {
   const rate = await getRateOfDay();
   if (!rate) return null;
-  const { name } = CURRENCIES[rate.quote];
+  const { name } = rate.quote;
   return (
     <Link
       href="/moneda"
@@ -234,11 +254,12 @@ async function RateCard() {
     >
       <CardTitle icon="currency">Cambio hoy</CardTitle>
         <p className="text-2xl font-extrabold text-heading">
-          S/ 1 = {formatAmount(rate.rate, rate.quote)} {rate.quote}
+          S/ 1 = {formatAmount(rate.rate, rate.quote)} {rate.quote.code}
         </p>
         <p className="text-sm text-muted">
           {name} · referencial, en casas de cambio varía.
         </p>
+        {rate.missing && <p className="text-sm text-muted">{missingRateNotice(rate.missing)}</p>}
         <span className="flex items-center gap-1 text-sm font-bold text-link">
           Abrir conversor <Icon name="chevron-right" size={16} />
         </span>
@@ -247,15 +268,18 @@ async function RateCard() {
 }
 
 async function WordOfDay() {
-  const supabase = await createClient();
+  const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()]);
   const { data, error } = await supabase
     .from("slang_terms")
-    .select("id, term, meaning, equivalent_co")
+    .select("id, term, meaning, is_piurano")
     .eq("is_published", true)
     .order("id");
   if (error) console.error("[inicio] slang error", error.message);
   const word = data?.[wordOfDayIndex(data.length)];
   if (!word) return null;
+  // "En {país} se dice…" only when that country has an equivalent.
+  const country = equivalentCountry(profileOrigin(profile));
+  const equivalent = (await loadEquivalents(supabase, "slang", country, [word.id])).get(word.id);
 
   return (
     <Link
@@ -263,11 +287,19 @@ async function WordOfDay() {
       className={`flex flex-col gap-2 rounded-2xl border border-border/30 bg-surface p-5 shadow-sm transition-colors hover:bg-hover ${focusRing}`}
     >
       <CardTitle icon="book">Palabra del día</CardTitle>
-        <p className="text-2xl font-extrabold text-heading">«{word.term}»</p>
+        <p className="flex flex-wrap items-center gap-2 text-2xl font-extrabold text-heading">
+          «{word.term}»
+          {word.is_piurano && (
+            <span className="rounded-full border border-primary bg-primary px-2.5 py-0.5 text-xs font-bold text-on-primary">
+              Piurano
+            </span>
+          )}
+        </p>
         <p className="text-foreground">{word.meaning}</p>
-        {word.equivalent_co && (
+        {country && equivalent && (
           <p className="text-sm text-muted">
-            En Colombia: <span className="font-bold text-heading">{word.equivalent_co}</span>
+            En {countryName(country)} se dice:{" "}
+            <span className="font-bold text-heading">{equivalent.text}</span>
           </p>
         )}
         <span className="flex items-center gap-1 text-sm font-bold text-link">
@@ -331,7 +363,9 @@ export default function HomePage() {
             <PhotoCard />
           </div>
           <div {...rise(3)}>
-            <Shortcuts />
+            <Suspense fallback={<Skeleton className="h-52" label="Cargando accesos…" />}>
+              <Shortcuts />
+            </Suspense>
           </div>
           <Suspense fallback={null}>
             <AdminButton />

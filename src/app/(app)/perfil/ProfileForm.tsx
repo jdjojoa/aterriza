@@ -1,27 +1,28 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { CountryPicker } from "@/components/CountryPicker";
+import {
+  OriginPicker,
+  isOriginComplete,
+  type DepartmentOption,
+  type OriginValue,
+} from "@/components/OriginPicker";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import {
-  DEFAULT_ORIGIN_COUNTRY,
-  isOriginCountry,
-  type OriginCountryCode,
-} from "@/lib/countries";
+import type { CountryOption } from "@/lib/countries";
 import { updateProfile, type ProfileFormState } from "./actions";
 
 type ProfileFormProps = {
   fullName: string | null;
-  originCountry: string;
+  initialOrigin: OriginValue;
+  countries: CountryOption[];
+  departments: DepartmentOption[];
 };
 
 const initialState: ProfileFormState = { status: "idle", message: null };
 
-export function ProfileForm({ fullName, originCountry }: ProfileFormProps) {
-  const [origin, setOrigin] = useState<OriginCountryCode>(
-    isOriginCountry(originCountry) ? originCountry : DEFAULT_ORIGIN_COUNTRY,
-  );
+export function ProfileForm({ fullName, initialOrigin, countries, departments }: ProfileFormProps) {
+  const [origin, setOrigin] = useState<OriginValue>(initialOrigin);
   const [state, formAction, pending] = useActionState(updateProfile, initialState);
 
   return (
@@ -33,13 +34,21 @@ export function ProfileForm({ fullName, originCountry }: ProfileFormProps) {
         autoComplete="name"
         required
         maxLength={80}
-        error={state.status === "error" ? (state.message ?? undefined) : undefined}
       />
-      <input type="hidden" name="origin_country" value={origin} />
-      <CountryPicker legend="País de origen" value={origin} onChange={setOrigin} />
+      <section aria-labelledby="origin-title" className="flex flex-col gap-3">
+        <h2 id="origin-title" className="text-xl font-extrabold text-heading">
+          ¿De dónde vienes?
+        </h2>
+        <OriginPicker countries={countries} departments={departments} value={origin} onChange={setOrigin} />
+      </section>
 
       <div className="flex flex-col gap-2">
-        <Button type="submit" size="lg" className="w-full" disabled={pending}>
+        {state.status === "error" && (
+          <p role="alert" className="text-sm font-bold text-on-warning-soft">
+            {state.message}
+          </p>
+        )}
+        <Button type="submit" size="lg" className="w-full" disabled={pending || !isOriginComplete(origin)}>
           {pending ? "Guardando…" : "Guardar cambios"}
         </Button>
         <p role="status" className="min-h-5 text-center text-sm font-bold text-heading">

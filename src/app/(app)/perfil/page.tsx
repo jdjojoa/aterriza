@@ -4,14 +4,17 @@ import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { getCurrentProfile } from "@/lib/auth";
-import { countryName } from "@/lib/countries";
+import { countryName, originCountryOptions } from "@/lib/countries";
+import { originLabel, profileOrigin } from "@/lib/origin";
+import { getPeruLocations } from "@/lib/peru-locations";
 import { ROLE_LABELS } from "@/lib/roles";
 import { ProfileForm } from "./ProfileForm";
 
 export const metadata: Metadata = { title: "Mi perfil · Aterriza" };
 
 async function ProfileSection() {
-  const profile = await getCurrentProfile();
+  const [profile, departments] = await Promise.all([getCurrentProfile(), getPeruLocations()]);
+  const origin = profileOrigin(profile);
   return (
     <>
       <Card className="flex items-center gap-3">
@@ -28,13 +31,19 @@ async function ProfileSection() {
             {ROLE_LABELS[profile.role]}
           </Badge>
           <p className="mt-1 text-sm text-muted">
-            Destino: {countryName(profile.destination_country)} → {profile.destination_city}
+            {originLabel(origin)} → {profile.destination_city}, {countryName(profile.destination_country)}
           </p>
         </div>
       </Card>
       <ProfileForm
         fullName={profile.full_name}
-        originCountry={profile.origin_country}
+        countries={originCountryOptions()}
+        departments={departments}
+        initialOrigin={
+          origin.type === "nacional"
+            ? { type: "nacional", country: null, department: origin.department, city: origin.city }
+            : { type: "internacional", country: origin.country, department: null, city: null }
+        }
       />
     </>
   );

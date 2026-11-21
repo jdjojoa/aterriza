@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   // Absolute URLs for opengraph-image.png in link previews.
   metadataBase: siteUrl ? new URL(siteUrl) : undefined,
   title: "Aterriza",
-  description: "Guía para estudiantes colombianos que llegan a Piura, Perú",
+  description: "Guía para estudiantes que llegan a Piura, desde otro país o desde otra ciudad del Perú",
   applicationName: "Aterriza",
   appleWebApp: { capable: true, title: "Aterriza", statusBarStyle: "default" },
 };

@@ -31,7 +31,7 @@ vista móvil a 360 px) con la app instalada como PWA.
 
 | Pantalla | Dato |
 |---|---|
-| Perfil | País de origen: **Colombia** → Piura |
+| Perfil | Cuenta principal: «De otro país» → **Paraguay**. Para mostrar el caso nacional: «De otra ciudad del Perú» → **Piura · Talara** |
 | Transporte | Ruta **EJ-01 · Centro a UCV** (combi) |
 | Lugar con reseña | **Plaza de Armas de Piura** |
 | Reseña (cuenta secundaria) | 4 estrellas: «Muy bonita de noche, hay policía y bancas para descansar.» |
@@ -39,9 +39,9 @@ vista móvil a 360 px) con la app instalada como PWA.
 | Medicamento | Caja de **Paracetamol** genérico con el nombre bien visible |
 | Medicamento en la base | Desde `/admin/contenido/medicines` crea **Paracetamol** (principio activo `paracetamol`) con fuente y enlace reales de DIGEMID. Sin dosis. |
 | Comida | Foto de un **ceviche** (o elegir «Ceviche» en la lista de platos) |
-| Chat · pregunta válida | «¿Qué significa "causa" y cómo se dice en Colombia?» |
+| Chat · pregunta válida | «¿Qué significa "causa" y cómo se dice en mi país?» |
 | Chat · fuera de tema | «¿Me resuelves esta ecuación: 2x + 3 = 7?» |
-| Moneda | **50** en el campo S/; luego **100000** en el campo COP |
+| Moneda | **50** en el campo S/; luego **100000** en el campo de la moneda del país (PYG para Paraguay) |
 | Jerga | Buscar **«pata»**, luego **«al toque»** |
 | Admin | `/admin/reportes` con el reporte creado arriba |
 
@@ -68,15 +68,15 @@ Tómalas en modo claro y oscuro (sirve también para mostrar los dos temas).
 
 | Tiempo | Pantalla | Qué hacer | Qué decir |
 |---|---|---|---|
-| 0:00–0:30 | **Login** `/` | Tocar «Entrar con Google» con la cuenta principal. | «Aterriza ayuda a estudiantes colombianos que llegan a Piura. Funciona como app instalable y sin costo.» |
+| 0:00–0:30 | **Login** `/` | Tocar «Entrar con Google» con la cuenta principal. | «Aterriza ayuda a estudiantes que llegan a Piura, desde otro país o desde otra ciudad del Perú. Funciona como app instalable y sin costo.» |
 | 0:30–0:50 | **Perfil** `/perfil` | Mostrar nombre y país de origen; en el menú del avatar (arriba a la derecha) cambiar el tema a oscuro. | «El perfil guarda de dónde viene el estudiante; toda la app tiene modo claro y oscuro.» |
 | 0:50–1:20 | **Transporte** `/transporte` | Tocar la ruta EJ-01; enseñar el mapa y la etiqueta de fuente. | «Cada ruta muestra fuente y fecha de verificación. Lo que no está verificado se marca como referencial.» |
 | 1:20–1:55 | **Lugares** `/lugares` | Abrir Plaza de Armas → bajar a **Reseñas** (se ve la de la cuenta secundaria). | «Los estudiantes dejan reseñas; si alguien reporta una reseña, llega al panel de moderación.» |
 | 1:55–2:35 | **Identificar · medicamento** `/identificar` | Tomar foto a la caja de Paracetamol. | «Lee el empaque y lo cruza con nuestra base. Nunca da dosis: muestra un **equivalente referencial**, un aviso y el enlace a DIGEMID.» |
-| 2:35–2:55 | **Identificar · comida** | Cambiar a Comida y fotografiar el ceviche (o abrirlo en la lista). | «Explica el plato, alérgenos y su parecido en Colombia.» |
+| 2:35–2:55 | **Identificar · comida** | Cambiar a Comida y fotografiar el ceviche (o abrirlo en la lista). | «Explica el plato, alérgenos y su parecido en el país del estudiante, si lo tenemos.» |
 | 2:55–3:40 | **Chat** `/chat` | 1) Pregunta válida sobre «causa». 2) Pregunta fuera de tema (ecuación). | «Responde solo con nuestra información y cita la fuente. Si la pregunta no es sobre adaptarse a Piura, se niega.» |
-| 3:40–4:00 | **Moneda** `/moneda` | Escribir 50 en S/; luego 100000 en COP (convierte en ambos sentidos). | «Tasa del día con su fuente y hora de actualización.» |
-| 4:00–4:20 | **Jerga** `/jerga` | Buscar «pata» y «al toque». | «Jerga piurana con su equivalente colombiano.» |
+| 3:40–4:00 | **Moneda** `/moneda` | Escribir 50 en S/; luego 100000 en la moneda del país (convierte en ambos sentidos). | «Tasa del día con su fuente y hora de actualización.» |
+| 4:00–4:20 | **Jerga** `/jerga` | Buscar «pata» y «al toque». | «Jerga piurana con la etiqueta "Piurano" y cómo se dice en tu país.» |
 | 4:20–5:00 | **Admin** `/admin/reportes` | Abrir el reporte; ocultar la reseña o descartar el reporte. | «El administrador modera reportes y edita el contenido. Todo protegido con RLS en Supabase.» |
 
 ---

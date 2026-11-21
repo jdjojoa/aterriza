@@ -7,6 +7,7 @@ import { Icon } from "@/components/icons/Icon";
 import { requireAdmin } from "@/lib/admin/auth";
 import { CONTENT_CONFIG, VERIFIED_TABLES } from "@/lib/admin/content-config";
 import { getGeminiQuota } from "@/lib/admin/gemini-quota";
+import { countryName } from "@/lib/countries";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Administración · Aterriza" };
@@ -86,7 +87,7 @@ async function Dashboard() {
       </section>
       <section aria-labelledby="unverified" className="flex flex-col gap-3">
         <h2 id="unverified" className="text-xl font-extrabold text-heading">
-          Medicamentos y rutas sin verificar
+          Medicamentos y tarifas sin verificar
         </h2>
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {tables.map((c) => (
@@ -95,6 +96,61 @@ async function Dashboard() {
         </ul>
       </section>
     </>
+  );
+}
+
+/** Users by origin type, and by city (national) or country (international). */
+async function OriginStats() {
+  await connection();
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_origin_stats");
+  if (error) {
+    console.error("[admin] origin stats failed", error.message);
+    return (
+      <p role="alert" className="rounded-xl bg-warning-soft p-3 font-bold text-on-warning-soft">
+        No pudimos cargar los usuarios por origen. ¿Ejecutaste la migración 0014?
+      </p>
+    );
+  }
+  const rows = data ?? [];
+  const groups = [
+    { type: "nacional", title: "De otra ciudad del Perú", label: (o: string) => o },
+    { type: "internacional", title: "De otro país", label: (o: string) => countryName(o) },
+  ] as const;
+
+  return (
+    <section aria-labelledby="origins" className="flex flex-col gap-3">
+      <h2 id="origins" className="text-xl font-extrabold text-heading">
+        Usuarios por origen
+      </h2>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {groups.map((g) => {
+          const list = rows.filter((r) => r.origin_type === g.type);
+          const total = list.reduce((n, r) => n + Number(r.users), 0);
+          return (
+            <div key={g.type} className="flex flex-col gap-2 rounded-2xl border border-border/30 bg-surface p-4 shadow-sm">
+              <p className="flex items-end justify-between gap-2">
+                <span className="text-sm font-bold text-heading">{g.title}</span>
+                <span className="text-3xl font-extrabold tabular-nums text-heading">{total}</span>
+              </p>
+              {list.length === 0 ? (
+                <p className="text-sm text-muted">Nadie todavía.</p>
+              ) : (
+                <ul className="flex flex-col gap-1 text-sm">
+                  {list.map((r) => (
+                    <li key={r.origin} className="flex justify-between gap-2 border-t border-border/20 pt-1">
+                      <span className="text-foreground">{g.label(r.origin)}</span>
+                      <span className="font-bold tabular-nums text-heading">{Number(r.users)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -130,6 +186,9 @@ export default function AdminPage() {
       </Suspense>
       <Suspense fallback={<DashboardSkeleton />}>
         <Dashboard />
+      </Suspense>
+      <Suspense fallback={<div role="status" className="h-40 animate-pulse rounded-2xl bg-accent-soft"><span className="sr-only">Cargando usuarios por origen…</span></div>}>
+        <OriginStats />
       </Suspense>
     </>
   );

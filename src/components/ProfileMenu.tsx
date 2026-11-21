@@ -78,6 +78,10 @@ export function ProfileMenu({ name, avatarUrl, isAdmin = false }: ProfileMenuPro
             <Icon name="user" size={20} />
             Mi perfil
           </Link>
+          <Link href="/moneda" className={itemClasses} onClick={() => setOpen(false)}>
+            <Icon name="currency" size={20} />
+            Conversor de moneda
+          </Link>
           {isAdmin && (
             <Link href="/admin" className={itemClasses} onClick={() => setOpen(false)}>
               <span className="text-accent">

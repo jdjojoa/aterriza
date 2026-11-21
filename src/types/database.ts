@@ -1,6 +1,6 @@
 /**
  * Database types for Supabase, written by hand to mirror
- * supabase/migrations/0001_schema.sql. Same shape as `supabase gen types`,
+ * supabase/migrations/0001–0017. Same shape as `supabase gen types`,
  * so it can be replaced by the generated file later:
  *   npx supabase gen types typescript --project-id <id> > src/types/database.ts
  *
@@ -34,6 +34,10 @@ export type TipStatus = "pending" | "approved" | "rejected";
 export type ChatRole = "user" | "assistant";
 export type AiFeature = "chat" | "photo_medicine" | "photo_food";
 export type AiCallStatus = "ok" | "error" | "rate_limited";
+export type OriginType = "internacional" | "nacional";
+export type ArrivalMode = "bus" | "avion" | "colectivo";
+export type EquivalentContentType = "medicine" | "food" | "slang";
+export type PeruLocationKind = "capital" | "provincia" | "distrito";
 /** transport_routes.path: list of [lat, lng] points for Leaflet. */
 export type RoutePath = [number, number][];
 
@@ -83,7 +87,12 @@ type ProfileRow = {
   full_name: string | null;
   avatar_url: string | null;
   role: UserRole;
-  origin_country: string;
+  /** ISO 3166-1 alpha-2. 'PE' for national students; null before onboarding (0017). */
+  origin_country: string | null;
+  origin_type: OriginType;
+  /** Only for origin_type = 'nacional'. */
+  origin_department: string | null;
+  origin_city: string | null;
   destination_country: string;
   destination_city: string;
   onboarded: boolean;
@@ -96,8 +105,6 @@ type MedicineFields = {
   active_ingredient: string;
   presentation: string | null;
   general_use: string | null;
-  /** "Equivalente referencial" in Colombia. */
-  equivalent_co: string | null;
   where_to_buy: string | null;
   warning: string;
   digemid_url: string;
@@ -108,7 +115,6 @@ type FoodFields = {
   name: string;
   description: string | null;
   main_ingredients: string | null;
-  similar_co: string | null;
   where_to_try: string | null;
   image_url: string | null;
   keywords: string[];
@@ -150,9 +156,62 @@ type TransportRouteFields = {
 type SlangTermFields = {
   term: string;
   meaning: string;
-  equivalent_co: string | null;
   example: string | null;
   category: string | null;
+  /** Word typical of Piura ("Piurano" badge). */
+  is_piurano: boolean;
+};
+
+type ArrivalRouteFields = {
+  origin_city: string;
+  transport_mode: ArrivalMode;
+  terminal_origen: string | null;
+  terminal_llegada: string | null;
+  duracion_aprox: string | null;
+  precio_min: number | null;
+  precio_max: number | null;
+  empresas: string | null;
+  notas: string | null;
+};
+
+/** Equivalent of a medicine / food / slang term in one country (0016). */
+type EquivalentRow = {
+  id: string;
+  content_type: EquivalentContentType;
+  content_id: string;
+  country_code: string;
+  equivalent_text: string;
+  brand_names: string[];
+  source_name: string | null;
+  source_url: string | null;
+  verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type PeruLocationRow = {
+  id: string;
+  department: string;
+  city: string;
+  kind: PeruLocationKind;
+  created_at: string;
+};
+
+type ExchangeRateSnapshotRow = {
+  id: string;
+  base: string;
+  /** Units of each currency per 1 base, e.g. {"USD": 0.27}. */
+  rates: Json;
+  fetched_at: string;
+  source: string;
+};
+
+/** Row of admin_origin_stats(). */
+export type OriginStatRow = {
+  origin_type: OriginType;
+  /** City (nacional) or ISO country code (internacional). */
+  origin: string;
+  users: number;
 };
 
 type CustomFields = {
@@ -229,7 +288,7 @@ export type AdminUserRow = {
   id: string;
   full_name: string | null;
   email: string | null;
-  origin_country: string;
+  origin_country: string | null;
   role: UserRole;
   created_at: string;
 };
@@ -339,6 +398,34 @@ export type Database = {
           Optional<CustomFields>;
         Update: Optional<ContentRow & CustomFields>;
         Relationships: [VerifiedByRelationship<"customs">];
+      };
+      arrival_routes: {
+        Row: ContentRow & ArrivalRouteFields;
+        Insert: ContentInsert &
+          Pick<ArrivalRouteFields, "origin_city" | "transport_mode"> &
+          Optional<ArrivalRouteFields>;
+        Update: Optional<ContentRow & ArrivalRouteFields>;
+        Relationships: [VerifiedByRelationship<"arrival_routes">];
+      };
+      equivalents: {
+        Row: EquivalentRow;
+        Insert: Pick<EquivalentRow, "content_type" | "content_id" | "country_code" | "equivalent_text"> &
+          Optional<EquivalentRow>;
+        Update: Optional<EquivalentRow>;
+        Relationships: [];
+      };
+      peru_locations: {
+        Row: PeruLocationRow;
+        Insert: Pick<PeruLocationRow, "department" | "city"> & Optional<PeruLocationRow>;
+        Update: Optional<PeruLocationRow>;
+        Relationships: [];
+      };
+      exchange_rate_snapshots: {
+        Row: ExchangeRateSnapshotRow;
+        Insert: Pick<ExchangeRateSnapshotRow, "base" | "rates" | "source"> &
+          Optional<ExchangeRateSnapshotRow>;
+        Update: Optional<ExchangeRateSnapshotRow>;
+        Relationships: [];
       };
       reviews: {
         Row: ReviewRow;
@@ -516,8 +603,12 @@ export type Database = {
           isSetofReturn: true;
         };
       };
-      search_slang_terms: {
-        Args: { p_terms: string[]; p_limit?: number };
+      admin_origin_stats: {
+        Args: Record<PropertyKey, never>;
+        Returns: OriginStatRow[];
+      };
+      search_slang_terms_v2: {
+        Args: { p_terms: string[]; p_country?: string | null; p_limit?: number };
         Returns: (ContentRow & SlangTermFields)[];
         SetofOptions: {
           from: "*";
@@ -558,3 +649,6 @@ export type Conversation = Tables<"conversations">;
 export type ChatMessage = Tables<"chat_messages">;
 export type AiUsage = Tables<"ai_usage">;
 export type ExchangeRate = Tables<"exchange_rates">;
+export type ArrivalRoute = Tables<"arrival_routes">;
+export type Equivalent = Tables<"equivalents">;
+export type PeruLocation = Tables<"peru_locations">;

@@ -1,6 +1,6 @@
 # Aterriza — reglas permanentes
 
-PWA en español para estudiantes colombianos que llegan a Piura, Perú. Proyecto de una sola persona: todo debe ser gratis.
+PWA en español para estudiantes que llegan a Piura, desde otro país o desde otra ciudad del Perú (Lima, Talara, Paita, Chiclayo, Trujillo, Sullana…). Proyecto de una sola persona: todo debe ser gratis.
 
 @AGENTS.md
 
@@ -20,9 +20,17 @@ PWA en español para estudiantes colombianos que llegan a Piura, Perú. Proyecto
 - Solo `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `NEXT_PUBLIC_SITE_URL` pueden ser públicas.
 
 ## Contenido y fuentes
-- **Medicamentos y tarifas de transporte** (regla de seguridad, no cambiar): fuente obligatoria y se muestran con `SourceBadge` (fuente, enlace, fecha, "Verificado" o "Referencial"). Solo estas dos tablas tienen verificación en el panel admin.
+- **Medicamentos y tarifas de transporte** (regla de seguridad, no cambiar): fuente obligatoria y se muestran con `SourceBadge` (fuente, enlace, fecha, "Verificado" o "Referencial"). Solo estas tablas (`medicines`, `transport_routes` y `arrival_routes`) tienen verificación en el panel admin.
 - **Lugares, platos, jerga y costumbres**: fuente opcional y sin verificación. Sin `SourceBadge` ni textos tipo "Pendiente de verificación"; si la fila tiene `source_url`, solo un enlace discreto "Fuente" (`SourceLink`).
 - El contenido generado con IA sigue mostrando `SourceBadge` con `variant="referencial-ia"`.
+
+## Origen del estudiante
+- `profiles.origin_type`: `'internacional'` (usa `origin_country`, cualquier país ISO) o `'nacional'` (`origin_country = 'PE'` + `origin_department` y `origin_city` de `peru_locations`). Se elige en el registro ("¿De dónde vienes?") y se edita en `/perfil`.
+- **Nunca asumir un país** (ni Colombia ni otro) en código, prompts, textos ni datos por defecto. Usa `profileOrigin()` / `originLabel()` de `src/lib/origin.ts`.
+- Lista de países: `Intl.DisplayNames` (`src/lib/countries.ts`), con bandera y moneda ISO 4217 (`COUNTRY_CURRENCY`).
+- Nacional: sin convertidor en el inicio (sigue en el menú), sin equivalencias extranjeras, jerga con etiqueta "Piurano" (`slang_terms.is_piurano`) y pestaña "Cómo llegar a Piura" (`arrival_routes`) en `/transporte`.
+- Internacional: moneda del país (si la API no la tiene, USD con aviso). Equivalencias solo de su país (tabla `equivalents`); si no hay, "Aún no tenemos equivalencias para {país}" + "Sugerir una" (crea un aporte con categoría `equivalencia`).
+- `arrival_routes` lleva tarifas: misma regla que transporte (fuente obligatoria para verificar, `SourceBadge`).
 
 ## Aportes y reseñas de la comunidad
 - Los aportes se publican al instante (`status = 'approved'` por defecto) y tienen botón "Reportar", igual que las reseñas.

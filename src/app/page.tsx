@@ -110,14 +110,14 @@ function Hero() {
       <div className="parallax-lift flex w-full max-w-xl flex-col items-center gap-5 text-center">
         <HeroMark className="size-40 sm:size-52 lg:size-60" />
         <p className="hero-fade rounded-full border border-border/30 bg-surface/80 px-3 py-1 text-sm font-bold text-heading backdrop-blur" style={{ "--delay": "0.2s" } as CSSProperties}>
-          Colombia → Piura, Perú
+          De otro país o del Perú → Piura
         </p>
         <AnimatedTitle
           text="Tu llegada, más fácil"
           className="text-[2.6rem] font-black leading-[1.05] tracking-tight text-heading min-[400px]:text-5xl sm:text-6xl lg:text-7xl"
         />
         <p className="hero-fade max-w-md text-lg text-foreground sm:text-xl" style={{ "--delay": "0.6s" } as CSSProperties}>
-          La guía para estudiantes colombianos que llegan a Piura: identifica productos con una foto, pregunta lo que necesites y muévete por la ciudad.
+          La guía para estudiantes que llegan a Piura, desde otro país o desde otra ciudad del Perú: identifica productos con una foto, pregunta lo que necesites y muévete por la ciudad.
         </p>
         <div className="hero-fade flex w-full max-w-xs flex-col gap-3" style={{ "--delay": "1.3s" } as CSSProperties}>
           <Suspense fallback={null}>
@@ -324,7 +324,7 @@ export default function Home() {
         <FinalCta />
       </main>
       <footer className="border-t border-border/20 px-4 py-6 text-center text-sm text-muted">
-        Aterriza · Guía para estudiantes colombianos en Piura, Perú
+        Aterriza · Guía para estudiantes que llegan a Piura, desde otro país o desde otra ciudad del Perú
       </footer>
     </>
   );

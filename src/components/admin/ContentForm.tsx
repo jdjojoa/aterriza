@@ -255,6 +255,22 @@ function Field({
   );
 
   switch (field.kind) {
+    case "checkbox":
+      return (
+        <div className="flex flex-col gap-1.5">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 font-bold text-heading">
+            <input
+              type="checkbox"
+              name={field.name}
+              defaultChecked={value === "on"}
+              aria-describedby={describedBy}
+              className="size-5 accent-[var(--primary-edge)]"
+            />
+            {label}
+          </label>
+          {extra}
+        </div>
+      );
     case "image":
       return <ImageUploadField table={table} name={field.name} label={field.label} defaultValue={value} error={error} />;
     case "textarea":

@@ -19,15 +19,15 @@ export function slangCategoryLabel(category: string | null) {
 
 /** Columns the Jerga screen needs. */
 export const SLANG_COLUMNS =
-  "id, term, meaning, equivalent_co, example, category, source_name, source_url, verified_at" as const;
+  "id, term, meaning, example, category, is_piurano, source_name, source_url, verified_at" as const;
 
 export type SlangItem = Pick<
   SlangTerm,
   | "id"
   | "term"
   | "meaning"
-  | "equivalent_co"
   | "example"
+  | "is_piurano"
   | "category"
   | "source_name"
   | "source_url"

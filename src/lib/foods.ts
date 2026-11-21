@@ -1,11 +1,12 @@
 /** Food helpers shared by the API route, the server page and the UI (no secrets here). */
 import type { Database } from "@/types/database";
+import type { CountryEquivalent } from "./equivalents";
 
 type FoodRow = Database["public"]["Tables"]["foods"]["Row"];
 
 /** Columns needed to render a food card. */
 export const FOOD_COLUMNS =
-  "id, name, description, main_ingredients, similar_co, where_to_try, image_url, keywords, source_name, source_url, verified_at";
+  "id, name, description, main_ingredients, where_to_try, image_url, keywords, source_name, source_url, verified_at";
 
 export type FoodListRow = Pick<
   FoodRow,
@@ -13,7 +14,6 @@ export type FoodListRow = Pick<
   | "name"
   | "description"
   | "main_ingredients"
-  | "similar_co"
   | "where_to_try"
   | "image_url"
   | "keywords"
@@ -28,7 +28,8 @@ export type FoodCard = {
   name: string;
   description: string | null;
   mainIngredients: string | null;
-  similarCo: string | null;
+  /** "Parecido en {país}"; null for national students. */
+  similar: CountryEquivalent;
   whereToTry: string | null;
   imageUrl: string | null;
   keywords: string[];
@@ -37,13 +38,13 @@ export type FoodCard = {
   verifiedAt: string | null;
 };
 
-export function toFoodCard(f: FoodListRow): FoodCard {
+export function toFoodCard(f: FoodListRow, similar: CountryEquivalent = null): FoodCard {
   return {
     id: f.id,
     name: f.name,
     description: f.description,
     mainIngredients: f.main_ingredients,
-    similarCo: f.similar_co,
+    similar,
     whereToTry: f.where_to_try,
     imageUrl: f.image_url,
     keywords: f.keywords ?? [],

@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/EmptyState";
+import { getCurrentProfile } from "@/lib/auth";
+import { countryName } from "@/lib/countries";
+import { loadEquivalents, type EquivalentInfo } from "@/lib/equivalents";
+import { equivalentCountry, profileOrigin } from "@/lib/origin";
 import { SLANG_COLUMNS } from "@/lib/slang";
 import { createClient } from "@/lib/supabase/server";
 import { SlangExplorer } from "./SlangExplorer";
@@ -8,12 +12,12 @@ import { SlangExplorer } from "./SlangExplorer";
 export const metadata: Metadata = { title: "Jerga · Aterriza" };
 
 async function SlangData() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("slang_terms")
-    .select(SLANG_COLUMNS)
-    .eq("is_published", true)
-    .order("term");
+  const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()]);
+  const country = equivalentCountry(profileOrigin(profile));
+  const [{ data, error }, equivalents] = await Promise.all([
+    supabase.from("slang_terms").select(SLANG_COLUMNS).eq("is_published", true).order("term"),
+    loadEquivalents(supabase, "slang", country),
+  ]);
 
   if (error) {
     return (
@@ -33,7 +37,25 @@ async function SlangData() {
       />
     );
   }
-  return <SlangExplorer terms={data} />;
+  return (
+    <SlangExplorer
+      terms={data}
+      country={country ? { code: country, name: countryName(country) } : null}
+      equivalents={Object.fromEntries(equivalents) as Record<string, EquivalentInfo>}
+    />
+  );
+}
+
+async function SlangIntro() {
+  const profile = await getCurrentProfile();
+  const country = equivalentCountry(profileOrigin(profile));
+  return (
+    <p className="text-muted">
+      {country
+        ? `Palabras peruanas y piuranas, con cómo se dice en ${countryName(country)} cuando lo sabemos.`
+        : "Palabras peruanas y las típicas de Piura, marcadas como «Piurano»."}
+    </p>
+  );
 }
 
 function SlangSkeleton() {
@@ -58,9 +80,9 @@ export default function SlangPage() {
     <main className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-extrabold tracking-tight text-heading">Jerga</h1>
-        <p className="text-muted">
-          Palabras peruanas y piuranas, con su equivalente en Colombia.
-        </p>
+        <Suspense fallback={<p className="h-6" aria-hidden="true" />}>
+          <SlangIntro />
+        </Suspense>
       </div>
       <Suspense fallback={<SlangSkeleton />}>
         <SlangData />

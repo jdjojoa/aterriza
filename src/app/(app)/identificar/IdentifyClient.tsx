@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useId, useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
+import { EquivalentField } from "@/components/EquivalentField";
 import { Badge } from "@/components/ui/Badge";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -126,9 +127,14 @@ function VerifiedResult({ medicine }: { medicine: MedicineCard }) {
         <Field label="Para qué se usa en general">
           {medicine.generalUse ?? "Sin información verificada todavía."}
         </Field>
-        <Field label="Equivalente referencial en Colombia">
-          {medicine.equivalentCo ?? "Sin información verificada todavía."}
-        </Field>
+        <EquivalentField
+          heading={`Equivalente referencial en ${medicine.equivalent?.countryName ?? ""}`}
+          data={medicine.equivalent}
+          contentType="medicine"
+          contentLabel={medicine.brandNamePe}
+          brandsLabel="Marcas en ese país"
+          labelClassName="text-sm font-bold text-muted"
+        />
         <Field label="Dónde comprar">
           {medicine.whereToBuy ?? "Sin información verificada todavía."}
         </Field>
@@ -198,7 +204,13 @@ function FoodDetails({ food, showReviews = true }: { food: FoodCard; showReviews
       <dl className="flex flex-col gap-3">
         <Field label="Qué es">{food.description ?? PENDING_TEXT}</Field>
         <Field label="Ingredientes principales">{food.mainIngredients ?? PENDING_TEXT}</Field>
-        <Field label="Parecido en Colombia">{food.similarCo ?? PENDING_TEXT}</Field>
+        <EquivalentField
+          heading={`Parecido en ${food.similar?.countryName ?? ""}`}
+          data={food.similar}
+          contentType="food"
+          contentLabel={food.name}
+          labelClassName="text-sm font-bold text-muted"
+        />
         <Field label="Dónde probarlo en Piura">{food.whereToTry ?? PENDING_TEXT}</Field>
       </dl>
       <NoticeBox>{note}</NoticeBox>

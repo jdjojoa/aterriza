@@ -1,23 +1,35 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { CountryPicker } from "@/components/CountryPicker";
+import {
+  OriginHiddenInputs,
+  OriginPicker,
+  isOriginComplete,
+  type DepartmentOption,
+  type OriginValue,
+} from "@/components/OriginPicker";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/icons/Icon";
-import {
-  DEFAULT_ORIGIN_COUNTRY,
-  DESTINATION,
-  countryName,
-  type OriginCountryCode,
-} from "@/lib/countries";
+import { DESTINATION, type CountryOption } from "@/lib/countries";
 import { completeOnboarding, type OnboardingState } from "./actions";
 
 const initialState: OnboardingState = { error: null };
 
-export function OnboardingForm() {
+export function OnboardingForm({
+  countries,
+  departments,
+}: {
+  countries: CountryOption[];
+  departments: DepartmentOption[];
+}) {
   const [step, setStep] = useState<1 | 2>(1);
-  const [origin, setOrigin] = useState<OriginCountryCode>(DEFAULT_ORIGIN_COUNTRY);
+  const [origin, setOrigin] = useState<OriginValue>({ type: null, country: null, department: null, city: null });
+  const complete = isOriginComplete(origin);
+  const originText =
+    origin.type === "nacional"
+      ? `${origin.city}, ${origin.department}`
+      : (countries.find((c) => c.code === origin.country)?.name ?? "");
   const [state, formAction, pending] = useActionState(completeOnboarding, initialState);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -29,7 +41,6 @@ export function OnboardingForm() {
 
   return (
     <form action={formAction} className="flex flex-col gap-6">
-      <input type="hidden" name="origin_country" value={origin} />
 
       <div className="flex flex-col gap-2">
         <p className="text-sm font-bold text-muted">Paso {step} de 2</p>
@@ -50,13 +61,19 @@ export function OnboardingForm() {
           >
             ¿De dónde vienes?
           </h1>
-          <CountryPicker legend="País de origen" value={origin} onChange={setOrigin} />
-          <Button size="lg" className="w-full" onClick={() => goTo(2)}>
+          <OriginPicker
+            countries={countries}
+            departments={departments}
+            value={origin}
+            onChange={setOrigin}
+          />
+          <Button size="lg" className="w-full" onClick={() => goTo(2)} disabled={!complete}>
             Continuar
           </Button>
         </>
       ) : (
         <>
+          <OriginHiddenInputs value={origin} />
           <h1
             ref={headingRef}
             tabIndex={-1}
@@ -71,7 +88,7 @@ export function OnboardingForm() {
             <div>
               <p className="text-sm text-muted">Destino</p>
               <p className="text-lg font-bold text-heading">
-                {countryName(DESTINATION.country)} → {DESTINATION.city}
+                Perú → {DESTINATION.city}
               </p>
             </div>
           </Card>
@@ -79,7 +96,7 @@ export function OnboardingForm() {
             Pronto más ciudades. Por ahora Aterriza te acompaña en Piura.
           </p>
           <p className="text-sm text-muted">
-            Vienes de <strong className="text-foreground">{countryName(origin)}</strong>.
+            Vienes de <strong className="text-foreground">{originText}</strong>.
           </p>
 
           {state.error && (

@@ -7,6 +7,8 @@ import {
 } from "@/lib/chat";
 import { buildChatContext, resolveCitations } from "@/lib/chat-context";
 import { countryName } from "@/lib/countries";
+import { currencyInfo } from "@/lib/currency";
+import { originCurrency, profileOrigin, type UserOrigin } from "@/lib/origin";
 import { chatModel, generateTracked, isGeminiRateLimited } from "@/lib/gemini";
 import { enforceMedicineRules, MEDICINE_TOPIC } from "@/lib/medicine-safety";
 import { buildChatSystemPrompt, offTopicReply } from "@/lib/prompts/chat";
@@ -30,7 +32,10 @@ function enforceWording(text: string) {
 
 // "S/ 3", "S/. 2.50", "3 soles", "5 a 6 soles", "10 mil pesos", "2 dólares", "1 USD", "$5"…
 const MONEY =
-  /S\/\.?\s?\d|\d+(?:[.,]\d+)?(?:\s*(?:a|y|-|–)\s*\d+(?:[.,]\d+)?)?\s*(?:mil\s+)?(?:soles?|pesos?|d[oó]lares?|usd|pen|cop|lucas?)\b|\$\s?\d/i;
+  /S\/\.?\s?\d|\d+(?:[.,]\d+)?(?:\s*(?:a|y|-|–)\s*\d+(?:[.,]\d+)?)?\s*(?:mil\s+)?(?:soles?|pesos?|d[oó]lares?|euros?|guaran[ií]es|bol[ií]vares|reales|lucas?)\b|[$€£₲]\s?\d|\d\s?€/i;
+/** "1 USD", "20 000 PYG": a number followed by any ISO 4217 code (case-sensitive). */
+const MONEY_CODE = /\d+(?:[.,]\d+)?\s*(?:mil\s+)?[A-Z]{3}\b/;
+const hasMoney = (text: string) => MONEY.test(text) || MONEY_CODE.test(text);
 const NO_PRICE =
   "No tengo un precio verificado. Te recomiendo preguntar y acordar el precio antes de subir o comprar.";
 
@@ -40,10 +45,10 @@ const NO_PRICE =
  * Runs before resolveCitations, while the markers are still [F1]/[C1].
  */
 const CITATION = /\[(?:F|C)\d+\]/;
-const unsourcedMoney = (sentence: string) => MONEY.test(sentence) && !CITATION.test(sentence);
+const unsourcedMoney = (sentence: string) => hasMoney(sentence) && !CITATION.test(sentence);
 
 function stripUnsourcedPrices(text: string) {
-  if (!MONEY.test(text)) return text;
+  if (!hasMoney(text)) return text;
   let removed = false;
   const kept = text
     .split("\n")
@@ -135,11 +140,11 @@ async function handleChat(request: Request) {
     );
   }
 
-  // 4. Profile, history and context (in parallel)
-  const [{ data: profile }, { data: history }, context] = await Promise.all([
+  // 4. Profile and history (in parallel), then the context for the user's origin.
+  const [{ data: profile }, { data: history }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("origin_country, destination_country, destination_city")
+      .select("origin_type, origin_country, origin_department, origin_city, destination_country, destination_city")
       .eq("id", userId)
       .maybeSingle(),
     conversation
@@ -150,15 +155,25 @@ async function handleChat(request: Request) {
           .order("created_at", { ascending: false })
           .limit(HISTORY_SIZE)
       : Promise.resolve({ data: [] as { role: string; content: string }[] }),
-    buildChatContext(supabase, text),
   ]);
+  // No profile row: international origin without a country (never a default country).
+  const origin: UserOrigin = profile ? profileOrigin(profile) : { type: "internacional", country: null };
+  const context = await buildChatContext(supabase, text, origin);
 
   const city = profile?.destination_city ?? "Piura";
-  const systemInstruction = buildChatSystemPrompt({
-    origin: countryName(profile?.origin_country ?? "CO"),
-    city,
-    country: countryName(profile?.destination_country ?? "PE"),
-  });
+  const country = countryName(profile?.destination_country ?? "PE");
+  const currency = originCurrency(origin);
+  const systemInstruction = buildChatSystemPrompt(
+    origin.type === "nacional"
+      ? { originType: "nacional", origin: origin.city, department: origin.department, city, country }
+      : {
+          originType: "internacional",
+          origin: origin.country ? countryName(origin.country) : null,
+          currencyName: currency ? currencyInfo(currency).name.toLowerCase() : null,
+          city,
+          country,
+        },
+  );
 
   const past: Content[] = (history ?? []).reverse().map((m) => ({
     role: m.role === "assistant" ? "model" : "user",

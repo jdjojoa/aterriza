@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth";
-import { isOriginCountry } from "@/lib/countries";
+import { parseOriginForm } from "@/lib/peru-locations";
 import { createClient } from "@/lib/supabase/server";
 
 export type ProfileFormState = {
@@ -17,7 +17,6 @@ export async function updateProfile(
   formData: FormData,
 ): Promise<ProfileFormState> {
   const fullName = String(formData.get("full_name") ?? "").trim().replace(/\s+/g, " ");
-  const origin = formData.get("origin_country");
 
   if (!fullName) {
     return { status: "error", message: "Escribe tu nombre." };
@@ -25,16 +24,15 @@ export async function updateProfile(
   if (fullName.length > MAX_NAME_LENGTH) {
     return { status: "error", message: `Usa como máximo ${MAX_NAME_LENGTH} caracteres.` };
   }
-  if (!isOriginCountry(origin)) {
-    return { status: "error", message: "Elige tu país de origen." };
-  }
+  const origin = await parseOriginForm(formData);
+  if (!origin.ok) return { status: "error", message: origin.error };
 
   // Re-checks the session: Server Actions are public endpoints.
   const profile = await getCurrentProfile();
   const supabase = await createClient();
   const { error } = await supabase
     .from("profiles")
-    .update({ full_name: fullName, origin_country: origin })
+    .update({ full_name: fullName, ...origin.value })
     .eq("id", profile.id);
 
   if (error) {

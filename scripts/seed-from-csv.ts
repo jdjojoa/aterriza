@@ -11,6 +11,11 @@
  * foods match by `name`, transport_routes by `code` (or `name` when code is empty),
  * slang_terms by `term` and customs by `title`. Matching rows are updated, the rest
  * are inserted. Nothing is ever deleted.
+ *
+ * equivalents.csv (optional) holds the equivalent of a dish, word or medicine
+ * in ONE country per row: content_type (food | slang | medicine), content_key
+ * (the dish name, the term or the brand_name_pe), country_code (ISO alpha-2).
+ * Rows are upserted on (content_type, content, country).
  */
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -96,7 +101,6 @@ const TABLES: { table: TableName; keys: string[]; columns: Record<string, Column
       name: { kind: "text", required: true },
       description: { kind: "text" },
       main_ingredients: { kind: "text" },
-      similar_co: { kind: "text" },
       where_to_try: { kind: "text" },
       image_url: { kind: "url" },
       keywords: { kind: "list" },
@@ -110,12 +114,12 @@ const TABLES: { table: TableName; keys: string[]; columns: Record<string, Column
       id: { kind: "uuid" },
       term: { kind: "text", required: true },
       meaning: { kind: "text", required: true },
-      equivalent_co: { kind: "text" },
       example: { kind: "text" },
       category: {
         kind: "text",
         oneOf: ["personas", "expresiones", "comida", "transporte", "compras", "estudio", "ropa", "lugares"],
       },
+      is_piurano: { kind: "boolean" },
       ...commonOptionalSource,
     },
   },
@@ -339,6 +343,8 @@ async function main() {
   // Validate every file before touching the database.
   const work = TABLES.map((spec) => ({ spec, rows: readTable(spec) }));
   for (const { spec, rows } of work) console.log(`OK ${spec.table}.csv: ${rows.length} filas válidas`);
+  const equivalents = readEquivalents();
+  console.log(`OK equivalents.csv: ${equivalents.length} filas válidas`);
   if (DRY_RUN) {
     console.log("--dry-run: no se escribió nada.");
     return;
@@ -393,6 +399,107 @@ async function main() {
     }
     console.log(`${spec.table}: ${inserts.length} insertadas, ${updated} actualizadas`);
   }
+  await seedEquivalents(supabase, equivalents);
+}
+
+// ---------------------------------------------------------------------------
+// equivalents.csv
+// ---------------------------------------------------------------------------
+type EquivalentCsvRow = {
+  line: number;
+  content_type: "food" | "slang" | "medicine";
+  content_key: string;
+  country_code: string;
+  equivalent_text: string;
+  brand_names: string[];
+  source_name: string | null;
+  source_url: string | null;
+};
+
+const EQUIVALENT_COLUMNS = [
+  "content_type",
+  "content_key",
+  "country_code",
+  "equivalent_text",
+  "brand_names",
+  "source_name",
+  "source_url",
+];
+
+/** Where each content_type lives and which column content_key matches. */
+const EQUIVALENT_TARGETS = {
+  food: { table: "foods", key: "name" },
+  slang: { table: "slang_terms", key: "term" },
+  medicine: { table: "medicines", key: "brand_name_pe" },
+} as const;
+
+function readEquivalents(): EquivalentCsvRow[] {
+  const file = resolve(DATA_DIR, "equivalents.csv");
+  if (!existsSync(file)) return [];
+  const { rows } = parseCsv(readFileSync(file, "utf8"));
+  const [header, ...body] = rows;
+  const names = (header ?? []).map((h) => h.trim());
+  if (names.join(",") !== EQUIVALENT_COLUMNS.join(","))
+    throw new Error(`equivalents.csv: el encabezado debe ser ${EQUIVALENT_COLUMNS.join(",")}`);
+  const errors: string[] = [];
+  const out: EquivalentCsvRow[] = [];
+  body.forEach((cells, i) => {
+    const line = i + 2;
+    const [type, key, country, text, brands, sourceName, sourceUrl] = cells.map((c) => c.trim());
+    if (!(type in EQUIVALENT_TARGETS)) errors.push(`línea ${line}: content_type debe ser food, slang o medicine`);
+    else if (!key) errors.push(`línea ${line}: content_key es obligatorio`);
+    else if (!/^[A-Z]{2}$/.test(country) || country === "PE") errors.push(`línea ${line}: country_code no válido`);
+    else if (!text) errors.push(`línea ${line}: equivalent_text es obligatorio`);
+    else if (sourceUrl && !/^https?:\/\//i.test(sourceUrl)) errors.push(`línea ${line}: source_url no válido`);
+    else if (type === "medicine" && /sustitu|intercambiab/i.test(`${text} ${brands}`))
+      errors.push(`línea ${line}: usa «equivalente referencial»`);
+    else
+      out.push({
+        line,
+        content_type: type as EquivalentCsvRow["content_type"],
+        content_key: key,
+        country_code: country,
+        equivalent_text: text,
+        brand_names: brands ? [...new Set(brands.split("|").map((b) => b.trim()).filter(Boolean))] : [],
+        source_name: sourceName || null,
+        source_url: sourceUrl || null,
+      });
+  });
+  if (errors.length) throw new Error(`equivalents.csv tiene errores:\n  ${errors.join("\n  ")}`);
+  return out;
+}
+
+async function seedEquivalents(supabase: ReturnType<typeof createClient<Database>>, rows: EquivalentCsvRow[]) {
+  if (rows.length === 0) return;
+  const records = [];
+  for (const type of Object.keys(EQUIVALENT_TARGETS) as EquivalentCsvRow["content_type"][]) {
+    const wanted = rows.filter((r) => r.content_type === type);
+    if (wanted.length === 0) continue;
+    const { table, key } = EQUIVALENT_TARGETS[type];
+    const { data, error } = await supabase.from(table).select(`id, ${key}`);
+    if (error) throw new Error(`${table}: ${error.message}`);
+    const ids = new Map<string, string>();
+    for (const row of (data ?? []) as unknown as Record<string, string>[])
+      ids.set(row[key].toLocaleLowerCase("es"), row.id);
+    for (const r of wanted) {
+      const id = ids.get(r.content_key.toLocaleLowerCase("es"));
+      if (!id) throw new Error(`equivalents.csv línea ${r.line}: no existe ${key} = «${r.content_key}» en ${table}`);
+      records.push({
+        content_type: r.content_type,
+        content_id: id,
+        country_code: r.country_code,
+        equivalent_text: r.equivalent_text,
+        brand_names: r.brand_names,
+        source_name: r.source_name,
+        source_url: r.source_url,
+      });
+    }
+  }
+  const { error } = await supabase
+    .from("equivalents")
+    .upsert(records, { onConflict: "content_type,content_id,country_code" });
+  if (error) throw new Error(`equivalents: ${error.message}`);
+  console.log(`equivalents: ${records.length} guardadas`);
 }
 
 main().catch((e: Error) => {
