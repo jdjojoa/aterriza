@@ -115,7 +115,22 @@ export const CONTENT_CONFIG: Record<ContentTable, ContentConfig> = {
     fields: [
       { kind: "text", name: "brand_name_pe", label: "Nombre comercial en Perú", required: true, max: 120 },
       { kind: "text", name: "active_ingredient", label: "Principio activo", required: true, max: 200 },
+      {
+        kind: "keywords",
+        name: "brand_names_pe",
+        label: "Marcas en Perú",
+        hint: "Separadas por comas. Ponlas también en «Palabras clave» para que la foto las encuentre.",
+      },
       { kind: "text", name: "presentation", label: "Presentación", max: 200, placeholder: "Ej.: Tabletas, jarabe" },
+      {
+        kind: "text",
+        name: "concentration",
+        label: "Concentración del producto",
+        max: 100,
+        placeholder: "Ej.: 500 mg o 500 mg + 65 mg",
+        hint: "Solo la que dice el empaque (número y unidad). Nunca una dosis.",
+      },
+      { kind: "text", name: "sale_condition", label: "Condición de venta", max: 300, placeholder: "Ej.: Venta sin receta" },
       { kind: "textarea", name: "general_use", label: "Uso general", max: 500, hint: "Sin dosis ni diagnósticos." },
       { kind: "text", name: "where_to_buy", label: "Dónde comprar", max: 200 },
       { kind: "textarea", name: "warning", label: "Aviso", required: true, max: 600 },
@@ -242,6 +257,7 @@ export const CONTENT_CONFIG: Record<ContentTable, ContentConfig> = {
         max: 80,
         hint: "Igual que en la lista de ciudades del registro (ej.: Lima, Talara, Chiclayo).",
       },
+      { kind: "text", name: "origin_department", label: "Departamento de origen", max: 80, placeholder: "Ej.: Lambayeque" },
       {
         kind: "select",
         name: "transport_mode",

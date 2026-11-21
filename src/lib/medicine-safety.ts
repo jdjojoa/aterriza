@@ -57,3 +57,39 @@ export function safeMedicineText(text: string | null | undefined) {
   if (!value) return null;
   return isSafeMedicineText(value) ? value : null;
 }
+
+/**
+ * Strength printed on the package ("500 mg", "500 mg + 65 mg", "1 %",
+ * "200 mg / 400 mg"). It describes the product, it is not a dose, so it only
+ * accepts numbers with a unit joined by "+" or "/": no verbs, no frequencies.
+ */
+const STRENGTH_TOKEN = /\d+(?:[.,]\d+)?\s*(?:mg|mcg|µg|g|ml|ui|%)(?![\p{L}\d])/giu;
+const STRENGTH_ONLY =
+  /^\d+(?:[.,]\d+)?\s*(?:mg|mcg|µg|g|ml|ui|%)(?:\s*(?:\+|\/)\s*\d+(?:[.,]\d+)?\s*(?:mg|mcg|µg|g|ml|ui|%))*$/iu;
+
+function normalizeStrength(token: string) {
+  return token.toLowerCase().replace(/\s+/g, "").replace(",", ".");
+}
+
+/** The concentration, or null when it is not a plain strength. */
+export function safeConcentration(text: string | null | undefined) {
+  const value = text?.trim();
+  if (!value || !STRENGTH_ONLY.test(value)) return null;
+  return value;
+}
+
+/**
+ * Like safeMedicineText, but a quantity that is exactly the product's own
+ * strength (e.g. "200 mg" when the concentration is "200 mg / 400 mg") is
+ * allowed. Any other quantity, frequency or forbidden word still drops it.
+ */
+export function safeMedicineFact(text: string | null | undefined, concentration: string | null | undefined) {
+  const value = text?.trim();
+  if (!value) return null;
+  const strength = safeConcentration(concentration);
+  const allowed = new Set((strength?.match(STRENGTH_TOKEN) ?? []).map(normalizeStrength));
+  const masked = value.replace(STRENGTH_TOKEN, (token) =>
+    allowed.has(normalizeStrength(token)) ? "" : token,
+  );
+  return isSafeMedicineText(masked) ? value : null;
+}

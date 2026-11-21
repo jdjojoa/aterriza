@@ -3,7 +3,7 @@
  * Used by the Server Actions (source of truth) and safe to use in the browser.
  */
 import { z } from "zod";
-import { isSafeMedicineText } from "@/lib/medicine-safety";
+import { safeConcentration, safeMedicineFact } from "@/lib/medicine-safety";
 import { MAX_WAYPOINTS } from "@/lib/transport";
 import {
   formColumns,
@@ -187,13 +187,21 @@ export function contentSchema(config: ContentConfig) {
         for (const field of config.fields) {
           if (field.kind === "url") continue;
           const value = values[field.name];
-          const text = Array.isArray(value) ? value.join(", ") : value;
-          if (typeof text === "string" && text && !isSafeMedicineText(text)) {
+          const items = Array.isArray(value) ? value : [value];
+          const concentration = typeof values.concentration === "string" ? values.concentration : null;
+          // The strength printed on the package ("500 mg") is not a dose.
+          const unsafe =
+            field.name === "concentration"
+              ? typeof value === "string" && value !== "" && !safeConcentration(value)
+              : items.some((item) => typeof item === "string" && item !== "" && !safeMedicineFact(item, concentration));
+          if (unsafe) {
             ctx.addIssue({
               code: "custom",
               path: [field.name],
               message:
-                "Quita dosis, frecuencias o palabras prohibidas. Usa «equivalente referencial».",
+                field.name === "concentration"
+                  ? "Escribe solo número y unidad (ej.: 500 mg o 500 mg + 65 mg)."
+                  : "Quita dosis, frecuencias o palabras prohibidas. Usa «equivalente referencial».",
             });
           }
         }

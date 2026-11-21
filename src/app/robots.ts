@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 /**
- * Public pages are the landing, /qr and /offline. Everything else needs a
+ * Public pages are the landing, /privacidad, /terminos, /qr and /offline. Everything else needs a
  * session (src/proxy.ts redirects to /), and the API and admin are never
  * useful to crawlers. No sitemap yet: the public surface is a single page.
  */
@@ -15,6 +15,7 @@ export default function robots(): MetadataRoute.Robots {
         "/api/",
         "/auth/",
         "/onboarding",
+        "/aceptar-terminos",
         "/inicio",
         "/perfil",
         "/chat",

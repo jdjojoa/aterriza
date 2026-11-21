@@ -165,7 +165,7 @@ async function handleChat(request: Request) {
   const currency = originCurrency(origin);
   const systemInstruction = buildChatSystemPrompt(
     origin.type === "nacional"
-      ? { originType: "nacional", origin: origin.city, department: origin.department, city, country }
+      ? { originType: "nacional", origin: origin.city, city, country }
       : {
           originType: "internacional",
           origin: origin.country ? countryName(origin.country) : null,

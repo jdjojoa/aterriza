@@ -37,6 +37,11 @@ export type MedicineCard = {
   brandNamePe: string;
   activeIngredient: string;
   presentation: string | null;
+  /** Strength of the product ("500 mg"), never a dose. */
+  concentration: string | null;
+  /** Brands sold in Peru. */
+  brandNamesPe: string[];
+  saleCondition: string | null;
   id: string;
   generalUse: string | null;
   /** Equivalente referencial in the user's country; null for national students. */

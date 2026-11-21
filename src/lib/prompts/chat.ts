@@ -1,5 +1,10 @@
 import "server-only";
 
+/**
+ * Privacy: Gemini only gets the origin type and the origin city (national) or
+ * country (international), plus the destination. Never the name, email,
+ * avatar or id of the user.
+ */
 export type ChatPromptVars =
   | {
       originType: "internacional";
@@ -12,9 +17,8 @@ export type ChatPromptVars =
     }
   | {
       originType: "nacional";
-      /** Origin city in Peru, e.g. "Talara". */
+      /** Origin city in Peru, e.g. "Talara". Only the city: no other personal data reaches Gemini. */
       origin: string;
-      department: string;
       city: string;
       country: string;
     };
@@ -29,7 +33,7 @@ export function offTopicReply(city: string) {
 function audienceBlock(vars: ChatPromptVars) {
   if (vars.originType === "nacional") {
     return `USUARIO
-- Es un estudiante peruano que llega a ${vars.city} desde ${vars.origin} (${vars.department}), otra ciudad del Perú.
+- Es un estudiante peruano que llega a ${vars.city} desde ${vars.origin}, otra ciudad del Perú.
 - Ya usa soles y conoce el Perú: no le hables de cambio de moneda, de equivalencias con otros países ni de trámites de extranjería.
 - Céntrate en lo propio de ${vars.city}: jerga piurana, comida, transporte, costumbres y cómo llegar desde ${vars.origin}.
 - Para viajar a ${vars.city} desde su ciudad usa las filas "Cómo llegar a Piura" del CONTEXTO, si las hay.`;

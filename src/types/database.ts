@@ -1,6 +1,6 @@
 /**
  * Database types for Supabase, written by hand to mirror
- * supabase/migrations/0001–0017. Same shape as `supabase gen types`,
+ * supabase/migrations/0001–0020. Same shape as `supabase gen types`,
  * so it can be replaced by the generated file later:
  *   npx supabase gen types typescript --project-id <id> > src/types/database.ts
  *
@@ -19,6 +19,7 @@ export type Json =
 // Check-constraint unions (columns are `text` + CHECK in Postgres)
 // ---------------------------------------------------------------------------
 export type UserRole = "user" | "admin";
+export type AdminNoteTarget = "medicines" | "equivalents" | "arrival_routes";
 export type PlaceCategory =
   | "turistico"
   | "comida"
@@ -96,6 +97,8 @@ type ProfileRow = {
   destination_country: string;
   destination_city: string;
   onboarded: boolean;
+  /** Terms of use + privacy policy (and 18+) accepted; null = must accept (0020). */
+  terms_accepted_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -104,6 +107,12 @@ type MedicineFields = {
   brand_name_pe: string;
   active_ingredient: string;
   presentation: string | null;
+  /** e.g. "500 mg" (0018). Strength of the product, never a dose. */
+  concentration: string | null;
+  /** Brands sold in Peru (0018). */
+  brand_names_pe: string[];
+  /** e.g. "Venta sin receta" (0018). */
+  sale_condition: string | null;
   general_use: string | null;
   where_to_buy: string | null;
   warning: string;
@@ -164,6 +173,8 @@ type SlangTermFields = {
 
 type ArrivalRouteFields = {
   origin_city: string;
+  /** Department of origin_city (0018). */
+  origin_department: string | null;
   transport_mode: ArrivalMode;
   terminal_origen: string | null;
   terminal_llegada: string | null;
@@ -185,6 +196,17 @@ type EquivalentRow = {
   source_name: string | null;
   source_url: string | null;
   verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Internal note, readable only by admins (0019). */
+type AdminNoteRow = {
+  id: string;
+  target_table: AdminNoteTarget;
+  target_id: string;
+  notes: string | null;
+  reference_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -412,6 +434,12 @@ export type Database = {
         Insert: Pick<EquivalentRow, "content_type" | "content_id" | "country_code" | "equivalent_text"> &
           Optional<EquivalentRow>;
         Update: Optional<EquivalentRow>;
+        Relationships: [];
+      };
+      admin_notes: {
+        Row: AdminNoteRow;
+        Insert: Pick<AdminNoteRow, "target_table" | "target_id"> & Optional<AdminNoteRow>;
+        Update: Optional<AdminNoteRow>;
         Relationships: [];
       };
       peru_locations: {
@@ -652,3 +680,4 @@ export type ExchangeRate = Tables<"exchange_rates">;
 export type ArrivalRoute = Tables<"arrival_routes">;
 export type Equivalent = Tables<"equivalents">;
 export type PeruLocation = Tables<"peru_locations">;
+export type AdminNote = Tables<"admin_notes">;

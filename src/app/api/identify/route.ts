@@ -12,7 +12,8 @@ import {
   type MedicineCard,
   type PackageReading,
 } from "@/lib/identify";
-import { safeMedicineText } from "@/lib/medicine-safety";
+import { toPeruvianIngredients } from "@/lib/medicine-aliases";
+import { safeConcentration, safeMedicineFact, safeMedicineText } from "@/lib/medicine-safety";
 import { equivalentCountry, profileOrigin } from "@/lib/origin";
 import {
   buildFoodDescriptionPrompt,
@@ -135,6 +136,9 @@ async function toCard(supabase: Supabase, userId: string, m: Medicine): Promise<
     brandNamePe: m.brand_name_pe,
     activeIngredient: m.active_ingredient,
     presentation: safeMedicineText(m.presentation),
+    concentration: safeConcentration(m.concentration),
+    brandNamesPe: (m.brand_names_pe ?? []).filter((b) => safeMedicineFact(b, m.concentration)),
+    saleCondition: safeMedicineFact(m.sale_condition, m.concentration),
     generalUse: safeMedicineText(m.general_use),
     equivalent: countryEquivalent(country, safe),
     whereToBuy: safeMedicineText(m.where_to_buy),
@@ -290,7 +294,7 @@ async function identifyMedicine(supabase: Supabase, userId: string, image: Image
   // 5. Look it up in our verified table (unaccent + trigram similarity).
   const { data: matches, error: searchError } = await supabase.rpc("search_medicines", {
     p_brand_name: reading.brandName,
-    p_active_ingredients: reading.activeIngredients,
+    p_active_ingredients: toPeruvianIngredients(reading.activeIngredients),
     p_limit: 1,
   });
   if (searchError) console.error("[api/identify] search_medicines error", searchError.message);

@@ -1,5 +1,6 @@
 "use client";
 
+import { PERSONAL_DATA_NOTICE } from "@/lib/legal";
 import { useSearchParams } from "next/navigation";
 import { useId, useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
 import { EquivalentField } from "@/components/EquivalentField";
@@ -121,9 +122,15 @@ function VerifiedResult({ medicine }: { medicine: MedicineCard }) {
         <h2 className="text-xl font-extrabold text-heading">{medicine.brandNamePe}</h2>
       </div>
       <dl className="flex flex-col gap-3">
-        <Field label="Nombre en Perú">{medicine.brandNamePe}</Field>
+        {medicine.brandNamesPe.length > 0 ? (
+          <Field label="Marcas en Perú">{medicine.brandNamesPe.join(", ")}</Field>
+        ) : (
+          <Field label="Nombre en Perú">{medicine.brandNamePe}</Field>
+        )}
         <Field label="Principio activo">{medicine.activeIngredient}</Field>
         {medicine.presentation && <Field label="Presentación">{medicine.presentation}</Field>}
+        {medicine.concentration && <Field label="Concentración">{medicine.concentration}</Field>}
+        {medicine.saleCondition && <Field label="Condición de venta">{medicine.saleCondition}</Field>}
         <Field label="Para qué se usa en general">
           {medicine.generalUse ?? "Sin información verificada todavía."}
         </Field>
@@ -409,6 +416,7 @@ function PhotoPicker({
             Elegir de la galería
           </Button>
         </div>
+        <p className="text-sm font-bold text-foreground">{PERSONAL_DATA_NOTICE}</p>
         <p className="text-sm text-muted">{outOfQuota ? "Ya usaste tus fotos de hoy. Vuelve mañana." : privacy}</p>
       </Card>
     </>

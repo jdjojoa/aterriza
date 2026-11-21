@@ -13,6 +13,7 @@ import { HeroMark } from "@/components/landing/HeroMark";
 import { RouteMap } from "@/components/landing/RouteMap";
 import { buttonClasses } from "@/components/ui/Button";
 import { DIGEMID_URL } from "@/lib/identify";
+import { PRIVACY_PATH, TERMS_PATH } from "@/lib/legal";
 import { SECTIONS } from "@/lib/sections";
 import { createClient } from "@/lib/supabase/server";
 import "./landing.css";
@@ -323,8 +324,22 @@ export default function Home() {
         <Trust />
         <FinalCta />
       </main>
-      <footer className="border-t border-border/20 px-4 py-6 text-center text-sm text-muted">
-        Aterriza · Guía para estudiantes que llegan a Piura, desde otro país o desde otra ciudad del Perú
+      <footer className="flex flex-col items-center gap-3 border-t border-border/20 px-4 py-6 text-center text-sm text-muted">
+        <p>Aterriza · Guía para estudiantes que llegan a Piura, desde otro país o desde otra ciudad del Perú</p>
+        <nav aria-label="Documentos legales" className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+          <Link
+            href={TERMS_PATH}
+            className="inline-flex min-h-11 items-center rounded font-bold text-link underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            Términos de uso
+          </Link>
+          <Link
+            href={PRIVACY_PATH}
+            className="inline-flex min-h-11 items-center rounded font-bold text-link underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            Política de privacidad
+          </Link>
+        </nav>
       </footer>
     </>
   );

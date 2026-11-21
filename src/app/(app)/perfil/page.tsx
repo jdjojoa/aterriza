@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { getCurrentProfile } from "@/lib/auth";
+import { PRIVACY_PATH, TERMS_PATH } from "@/lib/legal";
 import { countryName, originCountryOptions } from "@/lib/countries";
 import { originLabel, profileOrigin } from "@/lib/origin";
 import { getPeruLocations } from "@/lib/peru-locations";
@@ -11,6 +13,9 @@ import { ROLE_LABELS } from "@/lib/roles";
 import { ProfileForm } from "./ProfileForm";
 
 export const metadata: Metadata = { title: "Mi perfil · Aterriza" };
+
+const legalLinkClass =
+  "inline-flex min-h-11 items-center rounded font-bold text-link underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 async function ProfileSection() {
   const [profile, departments] = await Promise.all([getCurrentProfile(), getPeruLocations()]);
@@ -58,6 +63,14 @@ export default function ProfilePage() {
       >
         <ProfileSection />
       </Suspense>
+      <nav aria-label="Documentos legales" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <Link href={TERMS_PATH} className={legalLinkClass}>
+          Términos de uso
+        </Link>
+        <Link href={PRIVACY_PATH} className={legalLinkClass}>
+          Política de privacidad
+        </Link>
+      </nav>
     </main>
   );
 }

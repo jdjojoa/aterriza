@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
 import { NextResponse, type NextRequest } from "next/server";
-import { isAdminPath, isOnboardingPath, isProtectedPath } from "@/lib/routes";
+import { isAcceptTermsPath, isAdminPath, isOnboardingPath, isProtectedPath } from "@/lib/routes";
 
 /**
  * Refreshes the Supabase auth session, keeps request/response cookies in sync
@@ -50,10 +50,10 @@ export async function updateSession(request: NextRequest) {
   const isLanding = pathname === "/";
 
   // Redirect while keeping any refreshed session cookies.
-  const redirectTo = (path: string) => {
+  const redirectTo = (path: string, search = "") => {
     const url = request.nextUrl.clone();
     url.pathname = path;
-    url.search = "";
+    url.search = search;
     const response = NextResponse.redirect(url);
     supabaseResponse.cookies
       .getAll()
@@ -69,7 +69,7 @@ export async function updateSession(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("onboarded, role")
+    .select("onboarded, role, terms_accepted_at")
     .eq("id", userId)
     .maybeSingle();
 
@@ -81,6 +81,13 @@ export async function updateSession(request: NextRequest) {
   }
   // Onboarded users may still open the landing: it shows "Ir a la app".
   if (isOnboardingPath(pathname)) return redirectTo("/inicio");
+
+  // Users created before the terms checkbox accept them once (0020).
+  if (!profile.terms_accepted_at) {
+    if (isAcceptTermsPath(pathname) || isLanding) return supabaseResponse;
+    return redirectTo("/aceptar-terminos", `?next=${encodeURIComponent(pathname)}`);
+  }
+  if (isAcceptTermsPath(pathname)) return redirectTo("/inicio");
   if (isAdminPath(pathname) && profile.role !== "admin") return redirectTo("/inicio");
 
   // Return supabaseResponse as-is so refreshed cookies reach the browser.

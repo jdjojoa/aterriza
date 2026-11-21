@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
+import { AdminNotes, type AdminNoteView } from "@/components/admin/AdminNotes";
 import { ContentForm } from "@/components/admin/ContentForm";
 import { EquivalentsEditor, type EquivalentRowView } from "@/components/admin/EquivalentsEditor";
 import type { RoutePreview } from "@/components/admin/LocationFields";
@@ -85,6 +86,28 @@ async function Editor({
       .sort((a, b) => a.countryName.localeCompare(b.countryName, "es"));
   }
 
+  // Internal notes of the row and of its equivalents (admin only, RLS).
+  let notes: AdminNoteView[] = [];
+  if (row && (table === "medicines" || table === "arrival_routes")) {
+    const supabase = await createClient();
+    const equivalentIds = equivalents.map((e) => e.id);
+    const filter = equivalentIds.length
+      ? `and(target_table.eq.${table},target_id.eq.${id}),and(target_table.eq.equivalents,target_id.in.(${equivalentIds.join(",")}))`
+      : `and(target_table.eq.${table},target_id.eq.${id})`;
+    const { data } = await supabase.from("admin_notes").select("id, target_table, target_id, notes, reference_url").or(filter);
+    notes = (data ?? [])
+      .map((n) => ({
+        id: n.id,
+        label:
+          n.target_table === "equivalents"
+            ? `Equivalencia en ${equivalents.find((e) => e.id === n.target_id)?.countryName ?? "otro país"}`
+            : "Este registro",
+        notes: n.notes,
+        referenceUrl: n.reference_url,
+      }))
+      .sort((a, b) => (a.label === "Este registro" ? -1 : b.label === "Este registro" ? 1 : a.label.localeCompare(b.label, "es")));
+  }
+
   return (
     <>
       <div className="flex flex-col gap-1">
@@ -109,6 +132,7 @@ async function Editor({
         createdWarning={created && query.recorrido === "recta" ? STRAIGHT_LINE_WARNING : null}
         routePreview={routePreview}
       />
+      <AdminNotes notes={notes} />
       {row && contentType && (
         <EquivalentsEditor
           contentType={contentType}

@@ -1,5 +1,6 @@
 "use client";
 
+import { PERSONAL_DATA_NOTICE } from "@/lib/legal";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -423,31 +424,37 @@ export function ChatClient({
 
         <form
           onSubmit={onSubmit}
-          className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] mt-auto lg:bottom-4 flex items-end gap-2 rounded-2xl border border-border/30 bg-background/95 p-2 shadow-sm backdrop-blur"
+          className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] mt-auto lg:bottom-4 flex flex-col gap-1.5 rounded-2xl border border-border/30 bg-background/95 p-2 shadow-sm backdrop-blur"
         >
-          <label htmlFor="chat-input" className="sr-only">
-            Escribe tu pregunta
-          </label>
-          <textarea
-            id="chat-input"
-            ref={inputRef}
-            rows={1}
-            value={draft}
-            maxLength={MAX_MESSAGE_LENGTH}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={onKeyDown}
-            disabled={outOfQuota}
-            placeholder={outOfQuota ? "Vuelve mañana para más consultas" : "Escribe tu pregunta…"}
-            className="field-sizing-content max-h-36 min-h-11 flex-1 resize-none rounded-xl border border-border bg-surface px-3 py-2.5 text-base text-foreground placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
-          />
-          <button
-            type="submit"
-            disabled={pending || loading || outOfQuota || !draft.trim()}
-            aria-label="Enviar"
-            className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary bg-primary text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Icon name="send" />
-          </button>
+          <div className="flex items-end gap-2">
+            <label htmlFor="chat-input" className="sr-only">
+              Escribe tu pregunta
+            </label>
+            <textarea
+              id="chat-input"
+              ref={inputRef}
+              aria-describedby="chat-privacy"
+              rows={1}
+              value={draft}
+              maxLength={MAX_MESSAGE_LENGTH}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={onKeyDown}
+              disabled={outOfQuota}
+              placeholder={outOfQuota ? "Vuelve mañana para más consultas" : "Escribe tu pregunta…"}
+              className="field-sizing-content max-h-36 min-h-11 flex-1 resize-none rounded-xl border border-border bg-surface px-3 py-2.5 text-base text-foreground placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
+            />
+            <button
+              type="submit"
+              disabled={pending || loading || outOfQuota || !draft.trim()}
+              aria-label="Enviar"
+              className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary bg-primary text-on-primary transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Icon name="send" />
+            </button>
+          </div>
+          <p id="chat-privacy" className="px-1 text-xs text-muted">
+            {PERSONAL_DATA_NOTICE}
+          </p>
         </form>
       </div>
     </div>

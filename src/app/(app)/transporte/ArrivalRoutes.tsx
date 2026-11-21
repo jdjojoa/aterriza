@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { SourceBadge } from "@/components/ui/SourceBadge";
-import { ARRIVAL_MODE_LABELS, formatPriceRange, type ArrivalItem } from "@/lib/arrival";
+import { ARRIVAL_MODE_LABELS, ARRIVAL_REFERENCE_LABEL, formatPriceRange, type ArrivalItem } from "@/lib/arrival";
 import { foldText } from "@/lib/text";
 
 /** "Cómo llegar a Piura": routes from the student's city, then the other cities. */
@@ -66,7 +66,7 @@ function ArrivalCard({ route }: { route: ArrivalItem }) {
     <Card className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <Badge>{ARRIVAL_MODE_LABELS[route.transport_mode]}</Badge>
-        {route.verified_at === null && <Badge variant="warning">Referencial</Badge>}
+        {route.verified_at === null && <Badge variant="warning">{ARRIVAL_REFERENCE_LABEL}</Badge>}
       </div>
       <h3 className="text-xl font-extrabold text-heading">{route.origin_city} → Piura</h3>
       <dl className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
@@ -77,7 +77,7 @@ function ArrivalCard({ route }: { route: ArrivalItem }) {
           <dt className="text-sm font-bold text-heading">Precio</dt>
           <dd className="text-foreground">
             {noPrice ? (
-              <Badge variant="warning">{formatPriceRange(null, null)}</Badge>
+              <span className="font-bold">{formatPriceRange(null, null)}</span>
             ) : (
               formatPriceRange(route.precio_min, route.precio_max)
             )}

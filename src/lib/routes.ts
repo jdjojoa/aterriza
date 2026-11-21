@@ -21,6 +21,7 @@ export function isProtectedPath(pathname: string) {
   return (
     APP_PATHS.some((base) => matches(pathname, base)) ||
     matches(pathname, "/onboarding") ||
+    matches(pathname, "/aceptar-terminos") ||
     matches(pathname, "/admin")
   );
 }
@@ -31,4 +32,8 @@ export function isAdminPath(pathname: string) {
 
 export function isOnboardingPath(pathname: string) {
   return matches(pathname, "/onboarding");
+}
+
+export function isAcceptTermsPath(pathname: string) {
+  return matches(pathname, "/aceptar-terminos");
 }

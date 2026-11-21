@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PRIVACY_PATH, TERMS_PATH } from "@/lib/legal";
 import { useEffect, useId, useRef, useState } from "react";
 import { signOut } from "@/app/actions/auth";
 import { Avatar } from "@/components/Avatar";
@@ -90,6 +91,14 @@ export function ProfileMenu({ name, avatarUrl, isAdmin = false }: ProfileMenuPro
               Panel de administrador
             </Link>
           )}
+          <Link href={TERMS_PATH} className={itemClasses} onClick={() => setOpen(false)}>
+            <Icon name="info" size={20} />
+            Términos de uso
+          </Link>
+          <Link href={PRIVACY_PATH} className={itemClasses} onClick={() => setOpen(false)}>
+            <Icon name="shield" size={20} />
+            Política de privacidad
+          </Link>
           <div className="flex items-center justify-between gap-2 px-3 py-1">
             <span className="text-sm font-bold text-muted">Tema</span>
             <ThemeToggle />

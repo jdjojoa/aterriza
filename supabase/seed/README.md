@@ -113,3 +113,21 @@ npm run seed                # valida y carga (equivale a: npx tsx scripts/seed-f
 
 Si algún CSV tiene un error de formato, el script indica archivo, línea y columna, y no escribe nada.
 La service role key salta RLS: ejecuta el script solo en tu equipo.
+
+## Carga del 20-11-2026 (`data/carga-2026-11-20/`)
+
+Medicamentos (`medicamentos.csv`), equivalencias de Colombia (`equivalencias_colombia.csv`) y rutas para
+llegar a Piura (`rutas_llegada.csv`). Requiere las migraciones `0018`, `0019` y `0020`.
+
+```bash
+npx tsx scripts/load-carga-2026-11-20.ts --dry-run   # valida (reglas de medicamentos incluidas)
+npx tsx scripts/load-carga-2026-11-20.ts             # escribe
+```
+
+- Una fila de `medicines` por principio activo; las marcas de Perú van en `brand_names_pe` y en `keywords`
+  (junto con las marcas del otro país, para que la foto de un empaque extranjero también encuentre la fila).
+- `fuente_marcas_url`, `notas_para_revisar` y el registro INVIMA de ejemplo van a `admin_notes`
+  (solo los ve el admin, en la ficha de edición).
+- Todo queda publicado y **sin verificar** (`verified_at` vacío): la app muestra «Referencial».
+- Antes de cargar las rutas borra las 3 filas de EJEMPLO de `arrival_routes`.
+- Puede ejecutarse varias veces: actualiza en lugar de duplicar.

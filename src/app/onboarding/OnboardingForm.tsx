@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/icons/Icon";
+import { AcceptTermsCheckbox } from "@/components/legal/AcceptTermsCheckbox";
 import { DESTINATION, type CountryOption } from "@/lib/countries";
 import { completeOnboarding, type OnboardingState } from "./actions";
 
@@ -31,6 +32,7 @@ export function OnboardingForm({
       ? `${origin.city}, ${origin.department}`
       : (countries.find((c) => c.code === origin.country)?.name ?? "");
   const [state, formAction, pending] = useActionState(completeOnboarding, initialState);
+  const [accepted, setAccepted] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   function goTo(next: 1 | 2) {
@@ -99,6 +101,8 @@ export function OnboardingForm({
             Vienes de <strong className="text-foreground">{originText}</strong>.
           </p>
 
+          <AcceptTermsCheckbox checked={accepted} onChange={setAccepted} />
+
           {state.error && (
             <p role="alert" className="text-sm font-bold text-on-warning-soft">
               {state.error}
@@ -106,7 +110,7 @@ export function OnboardingForm({
           )}
 
           <div className="flex flex-col gap-3">
-            <Button type="submit" size="lg" className="w-full" disabled={pending}>
+            <Button type="submit" size="lg" className="w-full" disabled={pending || !accepted}>
               {pending ? "Guardando…" : "Empezar"}
             </Button>
             <Button
