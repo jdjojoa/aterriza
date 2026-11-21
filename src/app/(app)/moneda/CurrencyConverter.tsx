@@ -5,11 +5,11 @@ import { Icon } from "@/components/icons/Icon";
 import { CurrencyFlag } from "@/components/ui/CurrencyFlag";
 import {
   BASE_CURRENCY,
-  CURRENCIES,
   convert,
   formatAmount,
   parseAmount,
   type Currency,
+  type CurrencyInfo,
   type RatesPerPen,
 } from "@/lib/currency";
 
@@ -35,20 +35,21 @@ export function CurrencyConverter({
   initialPair,
 }: {
   rates: RatesPerPen;
-  /** Currencies with a rate (always includes PEN), in display order. */
-  available: Currency[];
+  /** Currencies with a rate (always includes PEN), in display order. Built on the server. */
+  available: CurrencyInfo[];
   initialPair: Pair;
 }) {
+  const infos: Record<Currency, CurrencyInfo> = Object.fromEntries(available.map((c) => [c.code, c]));
   const derive = (value: number | null, from: Currency, to: Currency) => {
     if (value === null) return "";
     const result = convert(value, from, to, rates);
-    return result === null ? "" : formatAmount(result, to);
+    return result === null ? "" : formatAmount(result, infos[to]);
   };
 
   /** Recomputes the non-anchor side from the anchor's value. */
   const build = (codes: Pair, anchor: Side, value: number | null): State => {
     const texts: [string, string] = ["", ""];
-    texts[anchor] = value === null ? "" : formatAmount(value, codes[anchor]);
+    texts[anchor] = value === null ? "" : formatAmount(value, infos[codes[anchor]]);
     texts[otherSide(anchor)] = derive(value, codes[anchor], codes[otherSide(anchor)]);
     return { codes, texts, anchor };
   };
@@ -57,7 +58,7 @@ export function CurrencyConverter({
   const { codes, texts, anchor } = state;
 
   function handleChange(side: Side, text: string) {
-    const value = parseAmount(text, codes[side]);
+    const value = parseAmount(text, infos[codes[side]]);
     const next: [string, string] = ["", ""];
     next[side] = text;
     next[otherSide(side)] = derive(value, codes[side], codes[otherSide(side)]);
@@ -65,15 +66,15 @@ export function CurrencyConverter({
   }
 
   function handleBlur(side: Side) {
-    const value = parseAmount(texts[side], codes[side]);
+    const value = parseAmount(texts[side], infos[codes[side]]);
     if (value === null) return;
     const next: [string, string] = [...texts];
-    next[side] = formatAmount(value, codes[side]);
+    next[side] = formatAmount(value, infos[codes[side]]);
     setState({ ...state, texts: next });
   }
 
   function handleCurrency(side: Side, currency: Currency) {
-    const value = parseAmount(texts[anchor], codes[anchor]);
+    const value = parseAmount(texts[anchor], infos[codes[anchor]]);
     const nextCodes: Pair = [...codes];
     // Picking the currency already on the other side swaps them.
     if (codes[otherSide(side)] === currency) {
@@ -105,7 +106,7 @@ export function CurrencyConverter({
       <div className="flex flex-col gap-2 rounded-2xl border border-border/30 bg-surface p-4 shadow-sm">
         <AmountField
           side={0}
-          currency={from}
+          currency={infos[from]}
           value={texts[0]}
           available={available}
           onChange={handleChange}
@@ -116,7 +117,7 @@ export function CurrencyConverter({
           <button
             type="button"
             onClick={swap}
-            aria-label={`Invertir: convertir de ${CURRENCIES[to].name} a ${CURRENCIES[from].name}`}
+            aria-label={`Invertir: convertir de ${infos[to].name} a ${infos[from].name}`}
             className="inline-flex size-11 items-center justify-center rounded-full border-2 border-primary-edge bg-surface text-heading transition-colors hover:bg-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <Icon name="swap" />
@@ -124,7 +125,7 @@ export function CurrencyConverter({
         </div>
         <AmountField
           side={1}
-          currency={to}
+          currency={infos[to]}
           value={texts[1]}
           available={available}
           onChange={handleChange}
@@ -135,7 +136,7 @@ export function CurrencyConverter({
 
       {unitRate !== null && (
         <p className="font-bold text-heading" aria-live="polite">
-          1 {from} = {formatAmount(unitRate, to)} {to}
+          1 {from} = {formatAmount(unitRate, infos[to])} {to}
         </p>
       )}
 
@@ -173,9 +174,9 @@ function AmountField({
   onCurrency,
 }: {
   side: Side;
-  currency: Currency;
+  currency: CurrencyInfo;
   value: string;
-  available: Currency[];
+  available: CurrencyInfo[];
   onChange: (side: Side, text: string) => void;
   onBlur: (side: Side) => void;
   onCurrency: (side: Side, currency: Currency) => void;
@@ -183,7 +184,7 @@ function AmountField({
   const id = useId();
   const selectId = `${id}-currency`;
   const inputId = `${id}-amount`;
-  const { name, symbol } = CURRENCIES[currency];
+  const { code, name, symbol } = currency;
   const role = side === 0 ? "De" : "A";
 
   return (
@@ -192,22 +193,22 @@ function AmountField({
         Moneda ({role.toLowerCase()})
       </label>
       <div className="relative flex min-h-11 items-center gap-2 rounded-xl px-1 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ring hover:bg-hover">
-        <CurrencyFlag currency={currency} />
+        <CurrencyFlag currency={code} />
         <span className="min-w-0 flex-1 truncate text-sm font-bold text-heading">
-          {name} ({currency})
+          {name} ({code})
         </span>
         <span className="shrink-0 text-muted">
           <Icon name="chevron-down" size={20} />
         </span>
         <select
           id={selectId}
-          value={currency}
-          onChange={(e) => onCurrency(side, e.target.value as Currency)}
+          value={code}
+          onChange={(e) => onCurrency(side, e.target.value)}
           className="absolute inset-0 size-full cursor-pointer opacity-0"
         >
-          {available.map((code) => (
-            <option key={code} value={code}>
-              {CURRENCIES[code].name} ({code})
+          {available.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.name} ({c.code})
             </option>
           ))}
         </select>
@@ -231,7 +232,7 @@ function AmountField({
           className="w-full min-w-0 bg-transparent text-2xl font-bold text-foreground outline-none placeholder:text-muted"
         />
         <span aria-hidden="true" className="text-sm font-bold text-muted">
-          {currency}
+          {code}
         </span>
       </div>
     </div>

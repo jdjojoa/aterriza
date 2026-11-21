@@ -38,6 +38,7 @@ export const TIP_CATEGORIES = [
   { value: "universidad", label: "Universidad" },
   { value: "dinero", label: "Dinero" },
   { value: "seguridad", label: "Seguridad" },
+  { value: "equivalencia", label: "Equivalencias" },
   { value: "otro", label: "Otro" },
 ] as const;
 

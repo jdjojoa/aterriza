@@ -121,6 +121,8 @@ function fieldSchema(field: FieldDef) {
       return selectSchema(field.options.map((o) => o.value), required);
     case "keywords":
       return keywordsSchema;
+    case "checkbox":
+      return z.string().transform((v) => v === "on");
   }
 }
 
@@ -166,15 +168,17 @@ export function contentSchema(config: ContentConfig) {
         }
       }
 
-      if (config.table === "transport_routes") {
-        const min = values.fare_min as number | null;
-        const max = values.fare_max as number | null;
+      const range =
+        config.table === "transport_routes"
+          ? (["fare_min", "fare_max", "La tarifa máxima no puede ser menor que la mínima."] as const)
+          : config.table === "arrival_routes"
+            ? (["precio_min", "precio_max", "El precio máximo no puede ser menor que el mínimo."] as const)
+            : null;
+      if (range) {
+        const min = values[range[0]] as number | null;
+        const max = values[range[1]] as number | null;
         if (min !== null && max !== null && min > max) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["fare_max"],
-            message: "La tarifa máxima no puede ser menor que la mínima.",
-          });
+          ctx.addIssue({ code: "custom", path: [range[1]], message: range[2] });
         }
       }
 
@@ -219,6 +223,7 @@ export function rawValuesFromRow(
   for (const column of [...formColumns(config), "source_name", "source_url"]) {
     const value = row?.[column];
     if (value === null || value === undefined) values[column] = config.defaults?.[column] ?? "";
+    else if (typeof value === "boolean") values[column] = value ? "on" : "";
     else if (column === config.map?.waypointsField) values[column] = JSON.stringify(value);
     else if (Array.isArray(value)) values[column] = value.join(", ");
     else values[column] = String(value);

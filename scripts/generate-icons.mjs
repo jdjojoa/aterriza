@@ -78,7 +78,7 @@ async function openGraph() {
   <rect y="606" width="1200" height="24" fill="${LAVENDER}"/>
   <text x="590" y="290" ${font} font-size="120" font-weight="900" fill="${NAVY}">Aterriza</text>
   <text x="596" y="364" ${font} font-size="40" font-weight="700" fill="${NAVY}">Tu guía para llegar a Piura</text>
-  <text x="596" y="420" ${font} font-size="32" font-weight="700" fill="${LAVENDER}">Colombia → Piura, Perú</text>
+  <text x="596" y="420" ${font} font-size="32" font-weight="700" fill="${LAVENDER}">De otro país o del Perú → Piura</text>
 </svg>`;
   return sharp(Buffer.from(card)).composite([{ input: art, left: 110, top: 95 }]).png().toBuffer();
 }

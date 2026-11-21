@@ -1,17 +1,34 @@
 "use client";
 
 import { useDeferredValue, useMemo, useState } from "react";
+import { EquivalentField } from "@/components/EquivalentField";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { Input } from "@/components/ui/Input";
 import { SourceLink } from "@/components/ui/SourceLink";
+import type { EquivalentInfo } from "@/lib/equivalents";
 import { SLANG_CATEGORIES, slangCategoryLabel, type SlangItem } from "@/lib/slang";
 import { foldText } from "@/lib/text";
 
 type Indexed = SlangItem & { termKey: string; textKey: string };
 
-export function SlangExplorer({ terms }: { terms: SlangItem[] }) {
+type Country = { code: string; name: string } | null;
+
+/** Filter value for the "Piurano" chip (not a slang_terms.category). */
+const PIURANO = "__piurano";
+
+export function SlangExplorer({
+  terms,
+  country,
+  equivalents,
+}: {
+  terms: SlangItem[];
+  /** User's country (international students); null for national students. */
+  country: Country;
+  /** Equivalents in the user's country, by term id. */
+  equivalents: Record<string, EquivalentInfo>;
+}) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("all");
   const deferredQuery = useDeferredValue(query);
@@ -22,10 +39,11 @@ export function SlangExplorer({ terms }: { terms: SlangItem[] }) {
       terms.map((t) => ({
         ...t,
         termKey: foldText(t.term),
-        textKey: foldText([t.meaning, t.equivalent_co, t.example].filter(Boolean).join(" ")),
+        textKey: foldText([t.meaning, equivalents[t.id]?.text, t.example].filter(Boolean).join(" ")),
       })),
-    [terms],
+    [terms, equivalents],
   );
+  const hasPiurano = terms.some((t) => t.is_piurano);
 
   const categories = useMemo(
     () => SLANG_CATEGORIES.filter((c) => terms.some((t) => t.category === c.value)),
@@ -35,7 +53,11 @@ export function SlangExplorer({ terms }: { terms: SlangItem[] }) {
   const visible = useMemo(() => {
     const q = foldText(deferredQuery).replace(/[¡!¿?]/g, "");
     const inCategory =
-      category === "all" ? indexed : indexed.filter((t) => t.category === category);
+      category === "all"
+        ? indexed
+        : category === PIURANO
+          ? indexed.filter((t) => t.is_piurano)
+          : indexed.filter((t) => t.category === category);
     if (!q) return inCategory;
     // Matches in the term first, then matches in meaning / equivalent / example.
     const byTerm = inCategory.filter((t) => t.termKey.includes(q));
@@ -68,6 +90,11 @@ export function SlangExplorer({ terms }: { terms: SlangItem[] }) {
         <Chip selected={category === "all"} onClick={() => setCategory("all")}>
           Todas
         </Chip>
+        {hasPiurano && (
+          <Chip selected={category === PIURANO} onClick={() => setCategory(PIURANO)}>
+            Piurano
+          </Chip>
+        )}
         {categories.map((c) => (
           <Chip key={c.value} selected={category === c.value} onClick={() => setCategory(c.value)}>
             {c.label}
@@ -90,7 +117,7 @@ export function SlangExplorer({ terms }: { terms: SlangItem[] }) {
         <ul className="flex flex-col gap-3">
           {visible.map((t) => (
             <li key={t.id}>
-              <SlangCard term={t} />
+              <SlangCard term={t} country={country} equivalent={equivalents[t.id] ?? null} />
             </li>
           ))}
         </ul>
@@ -99,22 +126,35 @@ export function SlangExplorer({ terms }: { terms: SlangItem[] }) {
   );
 }
 
-function SlangCard({ term }: { term: SlangItem }) {
+function SlangCard({
+  term,
+  country,
+  equivalent,
+}: {
+  term: SlangItem;
+  country: Country;
+  equivalent: EquivalentInfo | null;
+}) {
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-xl font-extrabold text-heading">{term.term}</h2>
-        <Badge>{slangCategoryLabel(term.category)}</Badge>
+        <span className="flex flex-wrap gap-1.5">
+          {term.is_piurano && <Badge variant="primary">Piurano</Badge>}
+          <Badge>{slangCategoryLabel(term.category)}</Badge>
+        </span>
       </div>
       <dl className="flex flex-col gap-2">
         <div>
           <dt className="text-sm font-bold text-heading">Significado</dt>
           <dd className="text-foreground">{term.meaning}</dd>
         </div>
-        <div>
-          <dt className="text-sm font-bold text-heading">En Colombia</dt>
-          <dd className="text-foreground">{term.equivalent_co || "Sin información"}</dd>
-        </div>
+        <EquivalentField
+          heading={`En ${country?.name ?? ""} se dice`}
+          data={country ? { countryCode: country.code, countryName: country.name, equivalent } : null}
+          contentType="slang"
+          contentLabel={term.term}
+        />
         {term.example && (
           <div>
             <dt className="text-sm font-bold text-heading">Ejemplo</dt>

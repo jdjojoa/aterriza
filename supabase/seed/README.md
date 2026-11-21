@@ -43,8 +43,8 @@ Para **renombrar** un lugar, pon su `id` en la columna `id` (si no, se crea uno 
 15 platos piuranos y peruanos con `description`, `main_ingredients` y `keywords`, publicados pero
 "Pendiente de verificación" (la app lo indica en cada ficha).
 
-- `similar_co` (parecido en Colombia) y `where_to_try` (dónde probarlo en Piura) están vacíos a propósito:
-  los llena quien lo haya comprobado. Al verificar, pon la fuente real en `source_name`/`source_url` y la fecha
+- `where_to_try` (dónde probarlo en Piura) está vacío a propósito: lo llena quien lo haya comprobado.
+  El "parecido en {país}" va en `equivalents.csv` (ver abajo). Al verificar, pon la fuente real en `source_name`/`source_url` y la fecha
   en `verified_at`.
 - `keywords`: otros nombres del plato separados por `|`, p. ej. `cebiche|seviche`. La búsqueda por foto de
   `/identificar` compara el nombre que reconoce la IA con `name` y con cada keyword.
@@ -62,12 +62,26 @@ La búsqueda por foto usa la función `search_foods` de `supabase/migrations/000
 
 - `category` (jerga): `expresiones`, `personas`, `comida`, `transporte`, `compras`, `estudio`, `lugares`, `ropa`.
 - `category` (costumbres): `saludo`, `comida`, `transporte`, `horarios`, `propinas`, `seguridad`.
-- `equivalent_co`: cómo se diría en Colombia. `example`: una frase de uso, sin comillas.
+- `example`: una frase de uso, sin comillas. `is_piurano`: `true` si es una palabra típica de Piura
+  (la app la marca con la etiqueta «Piurano»).
+- Cómo se dice en cada país va en `equivalents.csv` (ver abajo), nunca en la tabla de jerga.
 - `icon` (costumbres): opcional; la app elige el ícono por categoría.
 
-El chatbot busca en la jerga con la función `search_slang_terms` (sin tildes, con `unaccent`) de
-`supabase/migrations/0005_search_slang.sql`: pégala en el SQL Editor después de 0004. Mientras no esté,
+El chatbot busca en la jerga con la función `search_slang_terms_v2` (sin tildes, con `unaccent`, y también
+en la equivalencia del país del usuario) de `supabase/migrations/0016_equivalents.sql`. Mientras no esté,
 el chat usa una búsqueda más simple.
+
+## Equivalencias por país (`equivalents.csv`)
+
+Una fila por contenido **y país**. Cada estudiante ve solo la de su país; si no hay, la app muestra
+«Aún no tenemos equivalencias para {país}» con el botón «Sugerir una».
+
+- `content_type`: `food`, `slang` o `medicine`.
+- `content_key`: el `name` del plato, el `term` de la jerga o el `brand_name_pe` del medicamento.
+- `country_code`: código ISO de dos letras (`CO`, `PY`, `ES`…). Nunca `PE`.
+- `equivalent_text`: cómo se llama o se dice en ese país. `brand_names` (solo medicamentos): marcas separadas por `|`.
+- `source_name` / `source_url`: opcionales.
+- Hoy solo hay filas de Colombia (`CO`), las que antes estaban en las columnas `*_co`.
 
 ## Medicamentos (`medicines.csv`) — plantilla, aún no se carga
 
@@ -75,13 +89,14 @@ el chat usa una búsqueda más simple.
 **solo** `brand_name_pe` (nombre genérico) y `active_ingredient`. El script `npm run seed` todavía **no** lo lee:
 hay que completarlo antes desde fuentes oficiales.
 
-- `equivalent_co`, `where_to_buy`, `source_url` y `verified_at` están vacíos a propósito: complétalos desde
-  [DIGEMID](https://opm-digemid.minsa.gob.pe/) (Perú) e [INVIMA](https://www.invima.gov.co/) (Colombia).
+- `where_to_buy`, `source_url` y `verified_at` están vacíos a propósito: complétalos desde
+  [DIGEMID](https://opm-digemid.minsa.gob.pe/) (Perú). El equivalente referencial de cada país va en
+  `equivalents.csv`, con la fuente de la autoridad sanitaria de ese país.
 - `source_name`, `source_url` y `digemid_url` son obligatorios en la base de datos.
 - `active_ingredient`: si hay varios, sepáralos con `+` (así los compara la búsqueda de `/identificar`).
 - `keywords`: nombres comerciales para encontrar el medicamento por su marca.
 - Nunca escribas dosis, ni las palabras "sustituto" o "intercambiable" (la base de datos las rechaza).
-  En Colombia se habla siempre de **equivalente referencial**.
+  Se habla siempre de **equivalente referencial**.
 - `warning`: vacío = aviso por defecto de la tabla.
 
 La búsqueda por foto usa la función `search_medicines` de `supabase/migrations/0003_search_medicines.sql`

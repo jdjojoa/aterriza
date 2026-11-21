@@ -3,6 +3,7 @@
  * Plain data, safe to import from Server and Client Components. The zod
  * schemas in ./schemas.ts are built from these definitions.
  */
+import { ARRIVAL_MODE_LABELS } from "@/lib/arrival";
 import { CUSTOM_CATEGORIES } from "@/lib/customs";
 import { PLACE_CATEGORIES } from "@/lib/places";
 import { SLANG_CATEGORIES } from "@/lib/slang";
@@ -15,6 +16,7 @@ export const CONTENT_TABLES = [
   "transport_routes",
   "slang_terms",
   "customs",
+  "arrival_routes",
 ] as const;
 
 export type ContentTable = (typeof CONTENT_TABLES)[number];
@@ -24,11 +26,18 @@ export function isContentTable(value: unknown): value is ContentTable {
 }
 
 /**
- * Safety rule: medicines and transport fares require a source and show
- * "Verificado" / "Referencial". The other tables have an optional source and
- * no verification step.
+ * Safety rule: medicines and transport fares (city routes and "Cómo llegar a
+ * Piura") require a source and show "Verificado" / "Referencial". The other
+ * tables have an optional source and no verification step.
  */
-export const VERIFIED_TABLES = ["medicines", "transport_routes"] as const satisfies readonly ContentTable[];
+export const VERIFIED_TABLES = ["medicines", "transport_routes", "arrival_routes"] as const satisfies readonly ContentTable[];
+
+/** Tables whose rows can have equivalents per country (public.equivalents). */
+export const EQUIVALENT_TABLES = {
+  medicines: "medicine",
+  foods: "food",
+  slang_terms: "slang",
+} as const satisfies Partial<Record<ContentTable, string>>;
 
 export function requiresVerification(table: ContentTable) {
   return (VERIFIED_TABLES as readonly string[]).includes(table);
@@ -44,6 +53,7 @@ export type FieldDef =
   | (BaseField & { kind: "number"; min?: number; max?: number; step?: number })
   | (BaseField & { kind: "select"; options: SelectOption[] })
   | (BaseField & { kind: "keywords" })
+  | (BaseField & { kind: "checkbox" })
   | (BaseField & { kind: "image" });
 
 /** A lat/lng pair picked by tapping the mini map. */
@@ -95,7 +105,7 @@ export const CONTENT_CONFIG: Record<ContentTable, ContentConfig> = {
     singular: "medicamento",
     titleField: "brand_name_pe",
     subtitleField: "active_ingredient",
-    searchFields: ["brand_name_pe", "active_ingredient", "equivalent_co"],
+    searchFields: ["brand_name_pe", "active_ingredient"],
     notice:
       "Nunca escribas dosis ni diagnósticos. No uses las palabras prohibidas; usa siempre «equivalente referencial» y enlaza a DIGEMID.",
     defaults: {
@@ -107,7 +117,6 @@ export const CONTENT_CONFIG: Record<ContentTable, ContentConfig> = {
       { kind: "text", name: "active_ingredient", label: "Principio activo", required: true, max: 200 },
       { kind: "text", name: "presentation", label: "Presentación", max: 200, placeholder: "Ej.: Tabletas, jarabe" },
       { kind: "textarea", name: "general_use", label: "Uso general", max: 500, hint: "Sin dosis ni diagnósticos." },
-      { kind: "text", name: "equivalent_co", label: "Equivalente referencial en Colombia", max: 200 },
       { kind: "text", name: "where_to_buy", label: "Dónde comprar", max: 200 },
       { kind: "textarea", name: "warning", label: "Aviso", required: true, max: 600 },
       { kind: "url", name: "digemid_url", label: "Enlace a DIGEMID", required: true },
@@ -119,13 +128,12 @@ export const CONTENT_CONFIG: Record<ContentTable, ContentConfig> = {
     label: "Comidas",
     singular: "comida",
     titleField: "name",
-    subtitleField: "similar_co",
-    searchFields: ["name", "main_ingredients", "similar_co"],
+    subtitleField: "main_ingredients",
+    searchFields: ["name", "main_ingredients"],
     fields: [
       { kind: "text", name: "name", label: "Nombre", required: true, max: 120 },
       { kind: "textarea", name: "description", label: "Descripción", max: 800 },
       { kind: "text", name: "main_ingredients", label: "Ingredientes principales", max: 300 },
-      { kind: "text", name: "similar_co", label: "Parecido en Colombia", max: 200 },
       { kind: "text", name: "where_to_try", label: "Dónde probarla", max: 300 },
       { kind: "image", name: "image_url", label: "Foto" },
       { kind: "keywords", name: "keywords", label: "Palabras clave", hint: "Separadas por comas." },
@@ -189,13 +197,18 @@ export const CONTENT_CONFIG: Record<ContentTable, ContentConfig> = {
     singular: "término",
     titleField: "term",
     subtitleField: "meaning",
-    searchFields: ["term", "meaning", "equivalent_co"],
+    searchFields: ["term", "meaning"],
     fields: [
       { kind: "text", name: "term", label: "Término", required: true, max: 100 },
       { kind: "textarea", name: "meaning", label: "Significado", required: true, max: 500 },
-      { kind: "text", name: "equivalent_co", label: "Equivalente en Colombia", max: 200 },
       { kind: "textarea", name: "example", label: "Ejemplo", max: 300 },
       { kind: "select", name: "category", label: "Categoría", options: options(SLANG_CATEGORIES) },
+      {
+        kind: "checkbox",
+        name: "is_piurano",
+        label: "Palabra típica de Piura",
+        hint: "Muestra la etiqueta «Piurano».",
+      },
     ],
   },
   customs: {
@@ -209,6 +222,40 @@ export const CONTENT_CONFIG: Record<ContentTable, ContentConfig> = {
       { kind: "text", name: "title", label: "Título", required: true, max: 150 },
       { kind: "textarea", name: "body", label: "Texto", required: true, max: 1200 },
       { kind: "select", name: "category", label: "Categoría", options: options(CUSTOM_CATEGORIES) },
+    ],
+  },
+  arrival_routes: {
+    table: "arrival_routes",
+    label: "Cómo llegar",
+    singular: "ruta para llegar a Piura",
+    titleField: "origin_city",
+    subtitleField: "transport_mode",
+    searchFields: ["origin_city", "terminal_origen", "terminal_llegada", "empresas"],
+    notice:
+      "No inventes precios, empresas ni terminales: escribe solo lo que dice la fuente. Para marcar como verificado hace falta la fuente.",
+    fields: [
+      {
+        kind: "text",
+        name: "origin_city",
+        label: "Ciudad de origen",
+        required: true,
+        max: 80,
+        hint: "Igual que en la lista de ciudades del registro (ej.: Lima, Talara, Chiclayo).",
+      },
+      {
+        kind: "select",
+        name: "transport_mode",
+        label: "Medio de transporte",
+        required: true,
+        options: Object.entries(ARRIVAL_MODE_LABELS).map(([value, label]) => ({ value, label })),
+      },
+      { kind: "text", name: "terminal_origen", label: "Terminal o aeropuerto de salida", max: 200 },
+      { kind: "text", name: "terminal_llegada", label: "Terminal o aeropuerto de llegada en Piura", max: 200 },
+      { kind: "text", name: "duracion_aprox", label: "Duración aproximada", max: 100, placeholder: "Ej.: 2 h" },
+      { kind: "number", name: "precio_min", label: "Precio mínimo (S/)", min: 0, max: 10000, step: 0.1 },
+      { kind: "number", name: "precio_max", label: "Precio máximo (S/)", min: 0, max: 10000, step: 0.1 },
+      { kind: "textarea", name: "empresas", label: "Empresas", max: 500, hint: "Separadas por comas." },
+      { kind: "textarea", name: "notas", label: "Notas", max: 1000 },
     ],
   },
 };

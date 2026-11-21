@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/",
     name: "Aterriza",
     short_name: "Aterriza",
-    description: "Guía para estudiantes colombianos que llegan a Piura, Perú",
+    description: "Guía para estudiantes que llegan a Piura, desde otro país o desde otra ciudad del Perú",
     lang: "es",
     dir: "ltr",
     start_url: "/inicio",

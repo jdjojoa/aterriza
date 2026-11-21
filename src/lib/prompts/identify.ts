@@ -77,7 +77,7 @@ export const UNKNOWN_DISH = "DESCONOCIDO";
 /** Step 2 (no match in the database): short description of the dish. */
 export function buildFoodDescriptionPrompt(dishName: string, ingredients: string[]) {
   const withIngredients = ingredients.length ? ` (ingredientes vistos: ${ingredients.join(", ")})` : "";
-  return `Describe en 2 frases cortas, en español sencillo y para un estudiante colombiano recién llegado a Perú, qué es el plato "${dishName}"${withIngredients}: qué lleva y cómo se suele comer.
+  return `Describe en 2 frases cortas, en español sencillo y para un estudiante recién llegado a Piura, Perú, qué es el plato "${dishName}"${withIngredients}: qué lleva y cómo se suele comer.
 
 Reglas obligatorias:
 - Solo información general y conocida; si no estás seguro de un dato (origen, historia, precio), no lo menciones.

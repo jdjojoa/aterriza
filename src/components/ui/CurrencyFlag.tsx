@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { COUNTRY_CURRENCY, countryFlag } from "@/lib/countries";
 import type { Currency } from "@/lib/currency";
 
 /** Five-point star centred on (cx, cy) with outer radius r. */
@@ -21,7 +22,7 @@ function vStripes(colors: string[]) {
 }
 
 // Simplified 3:2 flags (no external images, legible at small sizes).
-const FLAGS: Record<Currency, ReactNode> = {
+const FLAGS: Record<string, ReactNode> = {
   PEN: vStripes(["#D91023", "#FFFFFF", "#D91023"]),
   COP: (
     <>
@@ -103,6 +104,16 @@ const FLAGS: Record<Currency, ReactNode> = {
   BOB: hStripes(["#D52B1E", "#F9E300", "#007934"]),
 };
 
+/**
+ * Country whose flag stands for a currency without a drawn flag: the one whose
+ * code starts the currency code (PYG → PY), else the first country using it.
+ */
+function flagCountry(currency: Currency) {
+  const prefix = currency.slice(0, 2);
+  if (COUNTRY_CURRENCY[prefix] === currency) return prefix;
+  return Object.keys(COUNTRY_CURRENCY).find((c) => COUNTRY_CURRENCY[c] === currency) ?? null;
+}
+
 /** Decorative flag for a currency; pair it with a visible name. */
 export function CurrencyFlag({
   currency,
@@ -111,6 +122,17 @@ export function CurrencyFlag({
   currency: Currency;
   className?: string;
 }) {
+  if (!FLAGS[currency]) {
+    const country = flagCountry(currency);
+    return (
+      <span
+        aria-hidden="true"
+        className={`inline-flex h-5 w-[30px] shrink-0 items-center justify-center overflow-hidden rounded-sm text-base leading-none ring-1 ring-border/60 ${className}`}
+      >
+        {country ? countryFlag(country) : "¤"}
+      </span>
+    );
+  }
   return (
     <svg
       viewBox="0 0 30 20"

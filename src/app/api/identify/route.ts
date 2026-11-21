@@ -1,3 +1,4 @@
+import { countryEquivalent, loadEquivalents } from "@/lib/equivalents";
 import { chatModel, generateTracked, isGeminiRateLimited, visionModel } from "@/lib/gemini";
 import { allergenNote, detectAllergens, FOOD_COLUMNS, FOOD_UNREADABLE_MESSAGE, toFoodCard } from "@/lib/foods";
 import {
@@ -12,6 +13,7 @@ import {
   type PackageReading,
 } from "@/lib/identify";
 import { safeMedicineText } from "@/lib/medicine-safety";
+import { equivalentCountry, profileOrigin } from "@/lib/origin";
 import {
   buildFoodDescriptionPrompt,
   buildGeneralUsePrompt,
@@ -111,13 +113,30 @@ function parseReading(raw: string): (PackageReading & { isPackaging: boolean }) 
   };
 }
 
-function toCard(m: Medicine): MedicineCard {
+/** Country whose equivalents the user sees; null for national students. */
+async function userEquivalentCountry(supabase: Supabase, userId: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("origin_type, origin_country, origin_department, origin_city")
+    .eq("id", userId)
+    .maybeSingle();
+  return data ? equivalentCountry(profileOrigin(data)) : null;
+}
+
+async function toCard(supabase: Supabase, userId: string, m: Medicine): Promise<MedicineCard> {
+  const country = await userEquivalentCountry(supabase, userId);
+  const found = (await loadEquivalents(supabase, "medicine", country, [m.id])).get(m.id);
+  // Same medicine rules as the rest of the card: drop unsafe text.
+  const safe = found && safeMedicineText(found.text)
+    ? { ...found, brandNames: found.brandNames.filter((b) => safeMedicineText(b)) }
+    : null;
   return {
+    id: m.id,
     brandNamePe: m.brand_name_pe,
     activeIngredient: m.active_ingredient,
     presentation: safeMedicineText(m.presentation),
     generalUse: safeMedicineText(m.general_use),
-    equivalentCo: safeMedicineText(m.equivalent_co),
+    equivalent: countryEquivalent(country, safe),
     whereToBuy: safeMedicineText(m.where_to_buy),
     warning: m.warning,
     digemidUrl: m.digemid_url,
@@ -281,7 +300,7 @@ async function identifyMedicine(supabase: Supabase, userId: string, image: Image
     return Response.json({
       status: "verified",
       reading,
-      medicine: toCard(match),
+      medicine: await toCard(supabase, userId, match),
       ...quota,
     } satisfies IdentifyApiSuccess);
   }
@@ -324,10 +343,12 @@ async function identifyFood(supabase: Supabase, userId: string, image: Image) {
 
   const match = matches?.[0];
   if (match) {
+    const country = await userEquivalentCountry(supabase, userId);
+    const similar = (await loadEquivalents(supabase, "food", country, [match.id])).get(match.id);
     return Response.json({
       status: "verified",
       reading,
-      food: toFoodCard(match),
+      food: toFoodCard(match, countryEquivalent(country, similar)),
       ...quota,
     } satisfies FoodApiSuccess);
   }

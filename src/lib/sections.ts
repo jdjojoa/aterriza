@@ -37,7 +37,7 @@ export const SECTIONS: Section[] = [
   {
     href: "/moneda",
     label: "Moneda",
-    description: "Convierte soles a pesos colombianos y al revés.",
+    description: "Convierte soles a la moneda de tu país y al revés.",
     icon: "currency",
     available: true,
     inNav: false,
@@ -45,7 +45,7 @@ export const SECTIONS: Section[] = [
   {
     href: "/jerga",
     label: "Jerga",
-    description: "Qué significa pata, jato o al toque, y cómo se dice en Colombia.",
+    description: "Qué significa pata, jato o al toque, y las palabras típicas de Piura.",
     icon: "book",
     available: true,
     inNav: false,

@@ -4,9 +4,11 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
 import { ContentForm } from "@/components/admin/ContentForm";
+import { EquivalentsEditor, type EquivalentRowView } from "@/components/admin/EquivalentsEditor";
 import type { RoutePreview } from "@/components/admin/LocationFields";
 import { requireAdmin } from "@/lib/admin/auth";
-import { CONTENT_CONFIG, formColumns, isContentTable } from "@/lib/admin/content-config";
+import { CONTENT_CONFIG, EQUIVALENT_TABLES, formColumns, isContentTable } from "@/lib/admin/content-config";
+import { countryName, originCountryOptions } from "@/lib/countries";
 import { rawValuesFromRow } from "@/lib/admin/schemas";
 import { createClient } from "@/lib/supabase/server";
 import { STRAIGHT_LINE_WARNING, parseRoutePath } from "@/lib/transport";
@@ -59,6 +61,30 @@ async function Editor({
     : null;
   const title = row ? String(row[config.titleField] ?? "") : "";
 
+  // Equivalents per country (medicines, foods, slang), once the row exists.
+  const contentType = table in EQUIVALENT_TABLES ? EQUIVALENT_TABLES[table as keyof typeof EQUIVALENT_TABLES] : null;
+  let equivalents: EquivalentRowView[] = [];
+  if (row && contentType) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("equivalents")
+      .select("id, country_code, equivalent_text, brand_names, source_name, source_url, verified_at")
+      .eq("content_type", contentType)
+      .eq("content_id", id);
+    equivalents = (data ?? [])
+      .map((e) => ({
+        id: e.id,
+        countryCode: e.country_code,
+        countryName: countryName(e.country_code),
+        text: e.equivalent_text,
+        brandNames: e.brand_names ?? [],
+        sourceName: e.source_name,
+        sourceUrl: e.source_url,
+        verifiedAt: e.verified_at,
+      }))
+      .sort((a, b) => a.countryName.localeCompare(b.countryName, "es"));
+  }
+
   return (
     <>
       <div className="flex flex-col gap-1">
@@ -83,6 +109,17 @@ async function Editor({
         createdWarning={created && query.recorrido === "recta" ? STRAIGHT_LINE_WARNING : null}
         routePreview={routePreview}
       />
+      {row && contentType && (
+        <EquivalentsEditor
+          contentType={contentType}
+          contentId={id}
+          rows={equivalents}
+          countries={originCountryOptions()}
+        />
+      )}
+      {!row && contentType && (
+        <p className="text-sm text-muted">Guarda primero para añadir equivalencias por país.</p>
+      )}
     </>
   );
 }

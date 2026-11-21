@@ -1,6 +1,10 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ARRIVAL_MODE_LABELS, formatPriceRange } from "@/lib/arrival";
 import type { ChatSource } from "@/lib/chat";
+import { countryName } from "@/lib/countries";
+import { loadEquivalents } from "@/lib/equivalents";
+import { equivalentCountry, type UserOrigin } from "@/lib/origin";
 import { placeCategoryLabel } from "@/lib/places";
 import { formatFare, TRANSPORT_MODE_LABELS } from "@/lib/transport";
 import type { Database, PlaceCategory, TransportMode } from "@/types/database";
@@ -127,7 +131,7 @@ type SearchHit = {
   text: string;
   score: number;
 };
-type Searcher = (supabase: Client, keywords: string[]) => Promise<SearchHit[]>;
+type Searcher = (supabase: Client, keywords: string[], origin: UserOrigin) => Promise<SearchHit[]>;
 
 async function searchTransport(supabase: Client, keywords: string[]): Promise<SearchHit[]> {
   const modes = hintedKeys(keywords, MODE_HINTS);
@@ -215,15 +219,18 @@ async function searchPlaces(supabase: Client, keywords: string[]): Promise<Searc
 }
 
 /**
- * Slang: accent-insensitive match through the search_slang_terms RPC (unaccent).
- * Falls back to ilike if the 0005 migration is not applied yet.
+ * Slang: accent-insensitive match through the search_slang_terms_v2 RPC
+ * (unaccent), which also searches the equivalents of the user's country.
+ * Falls back to ilike if the 0016 migration is not applied yet.
+ * The equivalent goes into the text only when that country has one.
  */
-async function searchSlang(supabase: Client, keywords: string[]): Promise<SearchHit[]> {
+async function searchSlang(supabase: Client, keywords: string[], origin: UserOrigin): Promise<SearchHit[]> {
+  const country = equivalentCountry(origin);
   const terms = [...new Set(keywords.flatMap((k) => [k, stem(k)]))];
-  const rpc = await supabase.rpc("search_slang_terms", { p_terms: terms, p_limit: 10 });
+  const rpc = await supabase.rpc("search_slang_terms_v2", { p_terms: terms, p_country: country, p_limit: 10 });
   let data = rpc.data;
   if (rpc.error) {
-    const filter = orFilter(["term", "meaning", "equivalent_co"], keywords);
+    const filter = orFilter(["term", "meaning", "example"], keywords);
     if (!filter) return [];
     const fallback = await supabase
       .from("slang_terms")
@@ -235,12 +242,14 @@ async function searchSlang(supabase: Client, keywords: string[]): Promise<Search
     data = fallback.data;
   }
   if (!data) return [];
+  const equivalents = await loadEquivalents(supabase, "slang", country, data.map((t) => t.id));
 
   return data.map((t) => {
+    const equivalent = equivalents.get(t.id);
     const text = [
-      `Jerga peruana: "${t.term}"`,
+      `Jerga peruana${t.is_piurano ? " (típica de Piura)" : ""}: "${t.term}"`,
       `Significa: ${t.meaning}`,
-      t.equivalent_co && `En Colombia se diría: ${t.equivalent_co}`,
+      country && equivalent && `En ${countryName(country)} se diría: ${equivalent.text}`,
       t.example && `Ejemplo: "${t.example}"`,
     ]
       .filter(Boolean)
@@ -307,7 +316,64 @@ async function searchCustoms(supabase: Client, keywords: string[]): Promise<Sear
   });
 }
 
-const SEARCHERS: Searcher[] = [searchTransport, searchPlaces, searchSlang, searchCustoms];
+/** Words about travelling to Piura from another city. */
+const ARRIVAL_WORDS = [
+  "llegar", "llego", "viajar", "viaje", "venir", "vengo", "bus", "buses", "avion", "vuelo", "volar",
+  "aeropuerto", "terminal", "colectivo", "pasaje", "empresa", "agencia", "interprovincial", "desde",
+];
+
+/**
+ * "Cómo llegar a Piura" (arrival_routes). National students: routes from
+ * their own city get a bonus; anyone matching a city name or travel word
+ * gets the routes from that city.
+ */
+async function searchArrival(supabase: Client, keywords: string[], origin: UserOrigin): Promise<SearchHit[]> {
+  const travel = keywords.some((k) => ARRIVAL_WORDS.some((w) => stem(k) === stem(w)));
+  const filter = orFilter(["origin_city", "terminal_origen", "terminal_llegada", "empresas"], keywords);
+  const ownCity = origin.type === "nacional" && travel ? origin.city : null;
+  if (!filter && !ownCity) return [];
+
+  const columns =
+    "id, origin_city, transport_mode, terminal_origen, terminal_llegada, duracion_aprox, precio_min, precio_max, empresas, notas, source_name, source_url, verified_at";
+  const [byKeyword, byCity] = await Promise.all([
+    filter
+      ? supabase.from("arrival_routes").select(columns).eq("is_published", true).or(filter).limit(CANDIDATES_PER_TABLE)
+      : Promise.resolve({ data: [], error: null }),
+    ownCity
+      ? supabase.from("arrival_routes").select(columns).eq("is_published", true).ilike("origin_city", ownCity).limit(CANDIDATES_PER_TABLE)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (byKeyword.error || byCity.error) return [];
+  const data = [...(byKeyword.data ?? []), ...(byCity.data ?? [])].filter(
+    (r, i, list) => list.findIndex((x) => x.id === r.id) === i,
+  );
+
+  return data.map((r) => {
+    const text = [
+      `Cómo llegar a Piura desde ${r.origin_city} en ${ARRIVAL_MODE_LABELS[r.transport_mode].toLowerCase()}`,
+      r.terminal_origen && `Sale de: ${r.terminal_origen}`,
+      r.terminal_llegada && `Llega a: ${r.terminal_llegada}`,
+      r.duracion_aprox && `Duración aproximada: ${r.duracion_aprox}`,
+      `Precio: ${formatPriceRange(r.precio_min, r.precio_max)}`,
+      r.empresas && `Empresas: ${r.empresas}`,
+      r.notas && `Notas: ${r.notas}`,
+    ]
+      .filter(Boolean)
+      .join(". ");
+    const own = origin.type === "nacional" && normalize(r.origin_city) === normalize(origin.city);
+    return {
+      title: `${r.origin_city} → Piura (${ARRIVAL_MODE_LABELS[r.transport_mode]})`,
+      sourceName: r.source_name,
+      sourceUrl: r.source_url,
+      verifiedAt: r.verified_at,
+      verifiable: true,
+      text,
+      score: score(text, keywords) + (travel ? 1 : 0) + (own && travel ? 2 : 0),
+    };
+  });
+}
+
+const SEARCHERS: Searcher[] = [searchTransport, searchPlaces, searchSlang, searchCustoms, searchArrival];
 
 async function searchTips(supabase: Client, keywords: string[]) {
   const filter = orFilter(["body", "category"], keywords);
@@ -332,14 +398,18 @@ async function searchTips(supabase: Client, keywords: string[]) {
 // -----------------------------------------------------------------------------
 
 /** Finds up to 8 relevant content rows + approved tips for the message. */
-export async function buildChatContext(supabase: Client, message: string): Promise<ChatContext> {
+export async function buildChatContext(
+  supabase: Client,
+  message: string,
+  origin: UserOrigin,
+): Promise<ChatContext> {
   const keywords = extractKeywords(message);
   if (keywords.length === 0) {
     return { block: "CONTEXTO:\n(sin resultados en la base de Aterriza)", sources: [] };
   }
 
   const [hitGroups, tips] = await Promise.all([
-    Promise.all(SEARCHERS.map((search) => search(supabase, keywords))),
+    Promise.all(SEARCHERS.map((search) => search(supabase, keywords, origin))),
     searchTips(supabase, keywords),
   ]);
 
@@ -363,7 +433,7 @@ export async function buildChatContext(supabase: Client, message: string): Promi
       return `[F${i + 1}] ${h.text}.${h.sourceName ? ` (Fuente: ${h.sourceName})` : ""}`;
     }
     const verified = h.verifiedAt ? `verificado el ${h.verifiedAt}` : "referencial, sin verificar";
-    return `[F${i + 1}] ${h.text}. (Fuente: ${h.sourceName}, ${verified})`;
+    return `[F${i + 1}] ${h.text}. (Fuente: ${h.sourceName ?? "sin fuente"}, ${verified})`;
   });
   tips.forEach((t, i) => {
     lines.push(`[C${i + 1}] Aporte de la comunidad: ${t.body.replace(/\s+/g, " ")}`);

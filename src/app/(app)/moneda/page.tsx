@@ -6,38 +6,33 @@ import { SourceBadge } from "@/components/ui/SourceBadge";
 import { getCurrentProfile } from "@/lib/auth";
 import {
   BASE_CURRENCY,
-  CURRENCY_CODES,
+  FALLBACK_CURRENCY,
   RATE_ATTRIBUTION,
   RATE_ATTRIBUTION_URL,
-  currencyForCountry,
+  currencyInfo,
+  currencyInfos,
   formatRateDate,
+  hasRate,
+  missingRateNotice,
+  quoteCurrencyFor,
   type Currency,
 } from "@/lib/currency";
 import { getExchangeRates } from "@/lib/exchange-rates";
+import { originCurrency, profileOrigin } from "@/lib/origin";
 import { CurrencyConverter } from "./CurrencyConverter";
 
 export const metadata: Metadata = { title: "Moneda · Aterriza" };
 
-/** Origin currency if it has a rate; otherwise USD, then the first available. */
-function defaultQuote(originCountry: string, available: Currency[]): Currency | null {
-  const others: Currency[] = available.filter((c) => c !== BASE_CURRENCY);
-  const origin = currencyForCountry(originCountry);
-  if (origin && others.includes(origin)) return origin;
-  return others.includes("USD") ? "USD" : (others[0] ?? null);
-}
+/** Shown first in the selectors, in this order, when they have a rate. */
+const PINNED: Currency[] = [BASE_CURRENCY, FALLBACK_CURRENCY, "EUR"];
 
 async function ConverterData() {
   // Request time only: getExchangeRates may write today's rates.
   await connection();
   const [data, profile] = await Promise.all([getExchangeRates(), getCurrentProfile()]);
+  const origin = profileOrigin(profile);
 
-  // Hide currencies the API did not return.
-  const available = CURRENCY_CODES.filter(
-    (code) => code === BASE_CURRENCY || data?.rates[code] !== undefined,
-  );
-  const quote = defaultQuote(profile.origin_country, available);
-
-  if (!data || !quote) {
+  if (!data || !hasRate(data.rates, FALLBACK_CURRENCY)) {
     return (
       <EmptyState
         icon="currency"
@@ -47,13 +42,27 @@ async function ConverterData() {
     );
   }
 
+  // PEN ↔ the user's currency (USD when the API has no rate for it).
+  // National students start with PEN ↔ USD, without a notice.
+  const userCurrency = originCurrency(origin);
+  const { quote, missing } = quoteCurrencyFor(userCurrency, data.rates);
+
+  // Every currency the API returned: PEN, USD, EUR and the user's first, then by name.
+  const infos = currencyInfos([BASE_CURRENCY, ...Object.keys(data.rates)]);
+  const pinned = [...PINNED, quote].filter((code, i, list) => infos[code] && list.indexOf(code) === i);
+  const rest = Object.values(infos)
+    .filter((c) => !pinned.includes(c.code))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  const available = [...pinned.map((code) => infos[code]), ...rest];
+
   return (
     <>
-      <CurrencyConverter
-        rates={data.rates}
-        available={available}
-        initialPair={[BASE_CURRENCY, quote]}
-      />
+      {missing && (
+        <p role="note" className="rounded-xl bg-warning-soft p-3 text-sm font-bold text-on-warning-soft">
+          {missingRateNotice(currencyInfo(missing))}
+        </p>
+      )}
+      <CurrencyConverter rates={data.rates} available={available} initialPair={[BASE_CURRENCY, quote]} />
       <p className="text-sm text-muted">
         Tasas del{" "}
         <time dateTime={data.fetchedAt}>{formatRateDate(data.fetchedAt)}</time>.
@@ -84,7 +93,7 @@ export default function CurrencyPage() {
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-extrabold tracking-tight text-heading">Moneda</h1>
         <p className="text-muted">
-          Convierte entre soles, la moneda de tu país y otras monedas de la región.
+          Convierte entre soles, la moneda de tu país y cualquier otra moneda.
         </p>
       </div>
       <Suspense fallback={<ConverterSkeleton />}>

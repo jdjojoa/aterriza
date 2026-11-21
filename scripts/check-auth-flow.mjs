@@ -99,7 +99,7 @@ try {
   // Same update the onboarding Server Action runs, with the user's own token (RLS).
   const upd = await rest(`/profiles?id=eq.${user.id}`, {
     method: "PATCH",
-    body: JSON.stringify({ origin_country: "CO", destination_country: "PE", destination_city: "Piura", onboarded: true }),
+    body: JSON.stringify({ origin_type: "internacional", origin_country: "PY", destination_country: "PE", destination_city: "Piura", onboarded: true }),
   });
   check("user can mark itself onboarded (RLS)", upd.ok && (await upd.json()).length === 1);
 
@@ -112,7 +112,7 @@ try {
   await expectRedirect("/onboarding", "/inicio", cookie);
   await expectRedirect("/admin", "/inicio", cookie);
   await expectOk("/inicio", cookie, "Laura");
-  await expectOk("/inicio", cookie, "Colombia → Piura");
+  await expectOk("/inicio", cookie, "Paraguay");
   await expectOk("/inicio", cookie, "href=\"/aportes\"");
   await expectOk("/perfil", cookie, "Laura Prueba Gómez");
   await expectOk("/identificar", cookie, "Identificar");

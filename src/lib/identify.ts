@@ -1,4 +1,5 @@
 /** /identificar constants and types shared by the API route and the UI. */
+import type { CountryEquivalent } from "./equivalents";
 import type { FoodCard } from "./foods";
 
 export type IdentifyKind = "medicine" | "food";
@@ -36,8 +37,10 @@ export type MedicineCard = {
   brandNamePe: string;
   activeIngredient: string;
   presentation: string | null;
+  id: string;
   generalUse: string | null;
-  equivalentCo: string | null;
+  /** Equivalente referencial in the user's country; null for national students. */
+  equivalent: CountryEquivalent;
   whereToBuy: string | null;
   warning: string;
   digemidUrl: string;
